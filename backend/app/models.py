@@ -61,7 +61,7 @@ class Simulation(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    messages = relationship("SimulationMessage", back_populates="simulation", cascade="all, delete-orphan")
+    messages = relationship("SimulationMessage", back_populates="simulation", cascade="all, delete-orphan", order_by="SimulationMessage.created_at")
 
 class SimulationMessage(Base):
     __tablename__ = "simulation_messages"
@@ -85,7 +85,7 @@ class ChatSession(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan", order_by="ChatMessage.created_at")
 
 class ChatMessage(Base):
     __tablename__ = "chat_messages"

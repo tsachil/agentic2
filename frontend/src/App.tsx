@@ -1,4 +1,5 @@
-import { 
+import { useEffect } from 'react';
+import {
   Box, 
   CssBaseline, 
   AppBar, 
@@ -35,9 +36,13 @@ const theme = createTheme({
 function Layout({ children }: { children: React.ReactNode }) {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
+  const fetchProfile = useAuthStore((state) => state.fetchProfile);
 
-  return (
-    <Box sx={{ flexGrow: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+  useEffect(() => {
+      fetchProfile();
+  }, []);
+
+  return (    <Box sx={{ flexGrow: 1, minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>

@@ -52,8 +52,13 @@ def test_step_simulation(mock_execute, client, auth_token, agents):
     assert response.status_code == 200
     data = response.json()
     assert data["content"] == "This is a mocked response."
-    assert data["sender_id"] in agent_ids
-    assert mock_execute.called
+    
+    # Verify retrieval order
+    get_res = client.get(f"/simulations/{sim['id']}", headers={"Authorization": f"Bearer {auth_token}"})
+    messages = get_res.json()["messages"]
+    assert len(messages) == 2 # System + Response
+    assert messages[0]["sender_id"] == "system"
+    assert messages[1]["sender_id"] in agent_ids
 
 def test_list_simulations(client, auth_token, agents):
     agent_ids = [a["id"] for a in agents]
