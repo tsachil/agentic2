@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, ConfigDict
 from typing import Optional, List, Any, Dict
 from datetime import datetime
 from .models import UserRole, AgentStatus
@@ -17,8 +17,7 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Token Schemas
 class Token(BaseModel):
@@ -45,8 +44,7 @@ class AgentResponse(AgentBase):
     created_at: datetime
     updated_at: Optional[datetime]
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class PromptRequest(BaseModel):
     prompt: str
@@ -66,8 +64,7 @@ class ChatSessionResponse(ChatSessionBase):
     agent_id: str
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ChatMessageBase(BaseModel):
     role: str
@@ -80,8 +77,7 @@ class ChatMessageResponse(ChatMessageBase):
     id: int
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Simulation Schemas
 class SimulationMessageBase(BaseModel):
@@ -96,8 +92,7 @@ class SimulationMessageResponse(SimulationMessageBase):
     id: int
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SimulationBase(BaseModel):
     name: str
@@ -112,5 +107,4 @@ class SimulationResponse(SimulationBase):
     created_at: datetime
     messages: List[SimulationMessageResponse] = []
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

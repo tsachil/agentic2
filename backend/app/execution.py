@@ -1,20 +1,21 @@
 import os
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 from typing import List, Dict, Any
 
 class ExecutionService:
     def __init__(self):
         # Configure Gemini API
         api_key = os.getenv("GOOGLE_API_KEY", "your-api-key-here")
-        genai.configure(api_key=api_key)
+        self.client = genai.Client(api_key=api_key)
         
         # Generation config
-        self.generation_config = {
-            "temperature": 0.7,
-            "top_p": 1,
-            "top_k": 1,
-            "max_output_tokens": 2048,
-        }
+        self.generation_config = types.GenerateContentConfig(
+            temperature=0.7,
+            top_p=1.0,
+            top_k=1,
+            max_output_tokens=2048,
+        )
 
     def construct_system_prompt(self, agent_name: str, purpose: str, personality: Dict[str, Any]) -> str:
         # personality traits: formality, verbosity, creativity, empathy, assertiveness (0.0 - 1.0)
@@ -41,10 +42,13 @@ class ExecutionService:
         )
 
         try:
-            # Initialize model with system instruction
-            model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash",
-                generation_config=self.generation_config,
+            # Update config with system instruction for this specific call
+            # Note: In the new SDK, system_instruction is part of the config
+            run_config = types.GenerateContentConfig(
+                temperature=self.generation_config.temperature,
+                top_p=self.generation_config.top_p,
+                top_k=self.generation_config.top_k,
+                max_output_tokens=self.generation_config.max_output_tokens,
                 system_instruction=system_prompt
             )
 
@@ -53,10 +57,14 @@ class ExecutionService:
             chat_history = []
             for msg in history:
                 role = "user" if msg["role"] == "user" else "model"
-                chat_history.append({"role": role, "parts": [msg["content"]]})
+                chat_history.append({"role": role, "parts": [{"text": msg["content"]}]})
 
             # Start chat with history
-            chat = model.start_chat(history=chat_history)
+            chat = self.client.chats.create(
+                model="gemini-2.0-flash",
+                config=run_config,
+                history=chat_history
+            )
             
             # Send message
             response = await chat.send_message_async(user_prompt)
