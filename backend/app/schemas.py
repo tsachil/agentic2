@@ -55,6 +55,20 @@ class PromptRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
 
+class ChatMessageBase(BaseModel):
+    role: str
+    content: str
+
+class ChatMessageCreate(ChatMessageBase):
+    pass
+
+class ChatMessageResponse(ChatMessageBase):
+    id: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 # Simulation Schemas
 class SimulationMessageBase(BaseModel):
     sender_id: str

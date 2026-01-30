@@ -19,8 +19,36 @@ async def execute_agent(
     if not agent:
         raise HTTPException(status_code=404, detail="Agent not found")
     
-    response_text = await execution.execution_service.execute_agent(agent, request.prompt, request.history)
+    # Save User Message
+    user_msg = models.ChatMessage(agent_id=agent_id, role="user", content=request.prompt)
+    db.add(user_msg)
+    
+    # Execute
+    # We fetch full history from DB + current prompt to maintain context
+    db_history = db.query(models.ChatMessage).filter(models.ChatMessage.agent_id == agent_id).order_by(models.ChatMessage.created_at.asc()).all()
+    history_dicts = [{"role": msg.role, "content": msg.content} for msg in db_history]
+    
+    response_text = await execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
+    
+    # Save Assistant Message
+    assistant_msg = models.ChatMessage(agent_id=agent_id, role="assistant", content=response_text)
+    db.add(assistant_msg)
+    db.commit()
+    
     return {"response": response_text}
+
+@router.get("/{agent_id}/history", response_model=List[schemas.ChatMessageResponse])
+def get_agent_history(
+    agent_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+        
+    messages = db.query(models.ChatMessage).filter(models.ChatMessage.agent_id == agent_id).order_by(models.ChatMessage.created_at.asc()).all()
+    return messages
 
 @router.post("/", response_model=schemas.AgentResponse)
 def create_agent(agent: schemas.AgentCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):

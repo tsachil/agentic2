@@ -15,8 +15,9 @@ import {
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import { useParams, Link } from 'react-router-dom';
-import { getAgent, executeAgent } from '../api/client';
+import { getAgent, executeAgent, getAgentHistory } from '../api/client';
 import type { Agent } from '../api/client';
+import { useNotification } from '../context/NotificationContext';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -30,10 +31,22 @@ export default function AgentChat() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<null | HTMLDivElement>(null);
+  const { showNotification } = useNotification();
 
   useEffect(() => {
     if (id) {
       getAgent(id).then(setAgent).catch(console.error);
+      getAgentHistory(id).then(history => {
+        // Cast string roles to typed roles for UI
+        const typedHistory = history.map(h => ({
+            role: h.role as 'user' | 'assistant',
+            content: h.content
+        }));
+        setMessages(typedHistory);
+      }).catch(err => {
+          console.error(err);
+          showNotification("Failed to load history", "error");
+      });
     }
   }, [id]);
 
@@ -55,6 +68,7 @@ export default function AgentChat() {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error", error);
+      showNotification("Failed to send message", "error");
     } finally {
       setLoading(false);
     }

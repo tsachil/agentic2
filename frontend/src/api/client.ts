@@ -84,6 +84,11 @@ export const executeAgent = async (id: string, prompt: string, history: {role: s
   return response.data;
 };
 
+export const getAgentHistory = async (id: string) => {
+  const response = await apiClient.get<{role: string, content: string}[]>(`/agents/${id}/history`);
+  return response.data;
+};
+
 // Simulation API
 export interface SimulationMessage {
   id: number;

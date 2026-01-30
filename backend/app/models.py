@@ -74,3 +74,12 @@ class SimulationMessage(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     simulation = relationship("Simulation", back_populates="messages")
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    agent_id = Column(String, ForeignKey("agents.id"))
+    role = Column(String) # 'user' or 'assistant'
+    content = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
