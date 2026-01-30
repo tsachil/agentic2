@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, subqueryload
 from typing import List
 from .. import database, models, schemas, auth, execution
 
@@ -50,7 +50,8 @@ def get_simulations(
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    sims = db.query(models.Simulation).filter(
+    # Eagerly load messages to avoid N+1 problem
+    sims = db.query(models.Simulation).options(subqueryload(models.Simulation.messages)).filter(
         models.Simulation.owner_id == current_user.id
     ).order_by(models.Simulation.updated_at.desc()).all()
     return sims
