@@ -80,7 +80,7 @@ def get_sessions(
     return sessions
 
 @router.post("/sessions/{session_id}/execute", response_model=schemas.ChatResponse)
-def execute_session_chat(
+async def execute_session_chat(
     session_id: str,
     request: schemas.PromptRequest,
     db: Session = Depends(database.get_db),
@@ -103,7 +103,7 @@ def execute_session_chat(
     db_history = db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session_id).order_by(models.ChatMessage.created_at.asc()).all()
     history_dicts = [{"role": msg.role, "content": msg.content} for msg in db_history]
     
-    response_text = execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
+    response_text = await execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
     
     # Save Assistant Message
     assistant_msg = models.ChatMessage(session_id=session_id, role="assistant", content=response_text)

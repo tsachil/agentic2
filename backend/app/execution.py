@@ -34,7 +34,7 @@ class ExecutionService:
             
         return prompt
 
-    def execute_agent(self, agent_model: Any, user_prompt: str, history: List[Dict[str, str]] = []) -> str:
+    async def execute_agent(self, agent_model: Any, user_prompt: str, history: List[Dict[str, str]] = []) -> str:
         system_prompt = self.construct_system_prompt(
             agent_model.name, 
             agent_model.purpose, 
