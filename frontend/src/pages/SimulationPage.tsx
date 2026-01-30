@@ -58,11 +58,11 @@ export default function SimulationPage() {
 
   // Auto-run logic
   useEffect(() => {
-    let interval: any;
+    let timeout: ReturnType<typeof setTimeout>;
     if (autoRun && simulation) {
-      interval = setInterval(handleStep, 4000); 
+      timeout = setTimeout(handleStep, 4000);
     }
-    return () => clearInterval(interval);
+    return () => clearTimeout(timeout);
   }, [autoRun, simulation]);
 
   const handleStart = async () => {
