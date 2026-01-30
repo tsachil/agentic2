@@ -59,7 +59,7 @@ class ExecutionService:
             chat = model.start_chat(history=chat_history)
             
             # Send message
-            response = chat.send_message(user_prompt)
+            response = await chat.send_message_async(user_prompt)
             return response.text
             
         except Exception as e:
