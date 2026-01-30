@@ -1,54 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 from typing import List
+from datetime import datetime
 from .. import database, models, schemas, auth, execution
 
 router = APIRouter(
     prefix="/agents",
     tags=["Agents"]
 )
-
-@router.post("/{agent_id}/execute", response_model=schemas.ChatResponse)
-async def execute_agent(
-    agent_id: str, 
-    request: schemas.PromptRequest, 
-    db: Session = Depends(database.get_db), 
-    current_user: models.User = Depends(auth.get_current_user)
-):
-    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-    
-    # Save User Message
-    user_msg = models.ChatMessage(agent_id=agent_id, role="user", content=request.prompt)
-    db.add(user_msg)
-    
-    # Execute
-    # We fetch full history from DB + current prompt to maintain context
-    db_history = db.query(models.ChatMessage).filter(models.ChatMessage.agent_id == agent_id).order_by(models.ChatMessage.created_at.asc()).all()
-    history_dicts = [{"role": msg.role, "content": msg.content} for msg in db_history]
-    
-    response_text = await execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
-    
-    # Save Assistant Message
-    assistant_msg = models.ChatMessage(agent_id=agent_id, role="assistant", content=response_text)
-    db.add(assistant_msg)
-    db.commit()
-    
-    return {"response": response_text}
-
-@router.get("/{agent_id}/history", response_model=List[schemas.ChatMessageResponse])
-def get_agent_history(
-    agent_id: str,
-    db: Session = Depends(database.get_db),
-    current_user: models.User = Depends(auth.get_current_user)
-):
-    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
-    if not agent:
-        raise HTTPException(status_code=404, detail="Agent not found")
-        
-    messages = db.query(models.ChatMessage).filter(models.ChatMessage.agent_id == agent_id).order_by(models.ChatMessage.created_at.asc()).all()
-    return messages
 
 @router.post("/", response_model=schemas.AgentResponse)
 def create_agent(agent: schemas.AgentCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -86,6 +46,90 @@ def update_agent(agent_id: str, agent_update: schemas.AgentCreate, db: Session =
     db.commit()
     db.refresh(db_agent)
     return db_agent
+
+@router.post("/{agent_id}/sessions", response_model=schemas.ChatSessionResponse)
+def create_session(
+    agent_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+        
+    session = models.ChatSession(
+        agent_id=agent_id,
+        user_id=current_user.id,
+        name=f"Chat {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}"
+    )
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
+
+@router.get("/{agent_id}/sessions", response_model=List[schemas.ChatSessionResponse])
+def get_sessions(
+    agent_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    sessions = db.query(models.ChatSession).filter(
+        models.ChatSession.agent_id == agent_id,
+        models.ChatSession.user_id == current_user.id
+    ).order_by(models.ChatSession.updated_at.desc()).all()
+    return sessions
+
+@router.post("/sessions/{session_id}/execute", response_model=schemas.ChatResponse)
+async def execute_session_chat(
+    session_id: str,
+    request: schemas.PromptRequest,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id,
+        models.ChatSession.user_id == current_user.id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    agent = db.query(models.Agent).filter(models.Agent.id == session.agent_id).first()
+    
+    # Save User Message
+    user_msg = models.ChatMessage(session_id=session_id, role="user", content=request.prompt)
+    db.add(user_msg)
+    
+    # Context
+    db_history = db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session_id).order_by(models.ChatMessage.created_at.asc()).all()
+    history_dicts = [{"role": msg.role, "content": msg.content} for msg in db_history]
+    
+    response_text = await execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
+    
+    # Save Assistant Message
+    assistant_msg = models.ChatMessage(session_id=session_id, role="assistant", content=response_text)
+    db.add(assistant_msg)
+    
+    # Update session timestamp
+    session.updated_at = func.now()
+    
+    db.commit()
+    return {"response": response_text}
+
+@router.get("/sessions/{session_id}/history", response_model=List[schemas.ChatMessageResponse])
+def get_session_history(
+    session_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    session = db.query(models.ChatSession).filter(
+        models.ChatSession.id == session_id,
+        models.ChatSession.user_id == current_user.id
+    ).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+        
+    messages = db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session_id).order_by(models.ChatMessage.created_at.asc()).all()
+    return messages
 
 @router.delete("/{agent_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_agent(agent_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):

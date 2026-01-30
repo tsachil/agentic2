@@ -89,6 +89,36 @@ export const getAgentHistory = async (id: string) => {
   return response.data;
 };
 
+// Session API
+export interface ChatSession {
+  id: string;
+  agent_id: string;
+  name: string;
+  created_at: string;
+}
+
+export const createSession = async (agentId: string) => {
+  const response = await apiClient.post<ChatSession>(`/agents/${agentId}/sessions`);
+  return response.data;
+};
+
+export const getSessions = async (agentId: string) => {
+  const response = await apiClient.get<ChatSession[]>(`/agents/${agentId}/sessions`);
+  return response.data;
+};
+
+export const executeSessionChat = async (sessionId: string, prompt: string) => {
+  const response = await apiClient.post<{response: string}>(`/agents/sessions/${sessionId}/execute`, {
+    prompt
+  });
+  return response.data;
+};
+
+export const getSessionHistory = async (sessionId: string) => {
+  const response = await apiClient.get<{role: string, content: string}[]>(`/agents/sessions/${sessionId}/history`);
+  return response.data;
+};
+
 // Simulation API
 export interface SimulationMessage {
   id: number;

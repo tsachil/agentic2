@@ -55,6 +55,20 @@ class PromptRequest(BaseModel):
 class ChatResponse(BaseModel):
     response: str
 
+class ChatSessionBase(BaseModel):
+    name: str
+
+class ChatSessionCreate(ChatSessionBase):
+    pass
+
+class ChatSessionResponse(ChatSessionBase):
+    id: str
+    agent_id: str
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
 class ChatMessageBase(BaseModel):
     role: str
     content: str

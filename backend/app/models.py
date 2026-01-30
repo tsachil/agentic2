@@ -75,11 +75,25 @@ class SimulationMessage(Base):
 
     simulation = relationship("Simulation", back_populates="messages")
 
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    agent_id = Column(String, ForeignKey("agents.id"))
+    user_id = Column(Integer, ForeignKey("users.id"))
+    name = Column(String) # E.g., "Chat started at..." or summary
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+
 class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    agent_id = Column(String, ForeignKey("agents.id"))
+    session_id = Column(String, ForeignKey("chat_sessions.id"))
     role = Column(String) # 'user' or 'assistant'
     content = Column(Text)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    session = relationship("ChatSession", back_populates="messages")
