@@ -12,14 +12,18 @@ import {
   Container,
   Checkbox,
   FormControlLabel,
-  Grid
+  Grid,
+  IconButton
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import { useNavigate } from 'react-router-dom';
 import { getAgents, createSimulation, getSimulation, stepSimulation } from '../api/client';
 import type { Agent, Simulation, SimulationMessage } from '../api/client';
 
 export default function SimulationPage() {
+  const navigate = useNavigate();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
   const [topic, setTopic] = useState('');
@@ -83,7 +87,12 @@ export default function SimulationPage() {
   if (!simulation) {
     return (
       <Container maxWidth="md">
-        <Paper sx={{ p: 4, mt: 4 }}>
+        <Box sx={{ mt: 4, mb: 2 }}>
+            <Button startIcon={<ArrowBackIcon />} onClick={() => navigate('/')}>
+                Back to Dashboard
+            </Button>
+        </Box>
+        <Paper sx={{ p: 4 }}>
           <Typography variant="h4" gutterBottom>Start Multi-Agent Simulation</Typography>
           
           <Typography variant="h6" sx={{ mt: 3 }}>1. Select Agents (Min 2)</Typography>
@@ -130,7 +139,12 @@ export default function SimulationPage() {
   return (
     <Box sx={{ height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' }}>
       <Paper sx={{ p: 2, mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Typography variant="h6">Topic: {topic}</Typography>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <IconButton onClick={() => navigate('/')}>
+                <ArrowBackIcon />
+            </IconButton>
+            <Typography variant="h6">Topic: {topic}</Typography>
+        </Box>
         <Box>
           <Button 
             variant={autoRun ? "outlined" : "contained"} 
