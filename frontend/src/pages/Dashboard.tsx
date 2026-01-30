@@ -65,7 +65,7 @@ export default function Dashboard() {
       ) : (
         <Grid container spacing={3}>
           {agents.map((agent) => (
-            <Grid item xs={12} sm={6} md={4} key={agent.id}>
+            <Grid size={{ xs: 12, sm: 6, md: 4 }} key={agent.id}>
               <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <CardContent sx={{ flexGrow: 1 }}>
                   <Typography variant="h6" gutterBottom>

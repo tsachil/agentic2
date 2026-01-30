@@ -8,12 +8,10 @@ import {
   List, 
   ListItem, 
   ListItemText, 
-  CircularProgress, 
   Container,
   Checkbox,
   FormControlLabel,
   Grid,
-  IconButton,
   Divider,
   ListItemButton,
   Breadcrumbs,
@@ -22,7 +20,7 @@ import {
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { getAgents, createSimulation, getSimulation, stepSimulation, getSimulations } from '../api/client';
 import type { Agent, Simulation } from '../api/client';
 import { useNotification } from '../context/NotificationContext';
@@ -30,7 +28,6 @@ import { useNotification } from '../context/NotificationContext';
 const DRAWER_WIDTH = 280;
 
 export default function SimulationPage() {
-  const navigate = useNavigate();
   const [agents, setAgents] = useState<Agent[]>([]);
   const [simulations, setSimulations] = useState<Simulation[]>([]);
   const [selectedAgents, setSelectedAgents] = useState<string[]>([]);
@@ -75,7 +72,7 @@ export default function SimulationPage() {
       // Reset form
       setTopic('');
       setSelectedAgents([]);
-    } catch (e) {
+    } catch {
       showNotification("Failed to start simulation", "error");
     } finally {
       setLoading(false);
@@ -102,7 +99,7 @@ export default function SimulationPage() {
         const sim = await getSimulation(id);
         setSimulation(sim);
         setAutoRun(false);
-    } catch (e) {
+    } catch {
         showNotification("Failed to load simulation", "error");
     } finally {
         setLoading(false);
@@ -173,7 +170,7 @@ export default function SimulationPage() {
                 <Typography variant="subtitle1" sx={{ mt: 3 }}>1. Select Agents (Min 2)</Typography>
                 <Grid container spacing={2}>
                     {agents.map(agent => (
-                    <Grid item key={agent.id} xs={12} sm={6}>
+                    <Grid key={agent.id} size={{ xs: 12, sm: 6 }}>
                         <FormControlLabel
                         control={
                             <Checkbox 

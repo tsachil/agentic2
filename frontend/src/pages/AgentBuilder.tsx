@@ -21,6 +21,7 @@ export default function AgentBuilder() {
   const isEditing = Boolean(id);
   
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [purpose, setPurpose] = useState('');
@@ -36,16 +37,22 @@ export default function AgentBuilder() {
 
   useEffect(() => {
     if (isEditing && id) {
-      setLoading(true);
-      getAgent(id).then(agent => {
-        setName(agent.name);
-        setDescription(agent.description || '');
-        setPurpose(agent.purpose || '');
-        if (agent.personality_config) {
-          setTraits(prev => ({ ...prev, ...agent.personality_config }));
+      (async () => {
+        setLoading(true);
+        try {
+          const agent = await getAgent(id);
+          setName(agent.name);
+          setDescription(agent.description || '');
+          setPurpose(agent.purpose || '');
+          if (agent.personality_config) {
+            setTraits(prev => ({ ...prev, ...agent.personality_config }));
+          }
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setLoading(false);
         }
-      }).catch(console.error)
-      .finally(() => setLoading(false));
+      })();
     }
   }, [id, isEditing]);
 
@@ -55,6 +62,7 @@ export default function AgentBuilder() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     const agentData: AgentCreate = {
       name,
       description,
@@ -71,6 +79,7 @@ export default function AgentBuilder() {
       navigate('/');
     } catch (error) {
       console.error("Failed to save agent", error);
+      setSubmitting(false);
     }
   };
 
@@ -88,7 +97,7 @@ export default function AgentBuilder() {
         <Box component="form" onSubmit={handleSubmit} sx={{ mt: 3 }}>
           <Grid container spacing={4}>
             {/* Basic Info Section */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="h6" gutterBottom>Basic Information</Typography>
               <TextField
                 margin="normal"
@@ -121,13 +130,14 @@ export default function AgentBuilder() {
             </Grid>
 
             {/* Personality Section */}
-            <Grid item xs={12} md={6}>
+            <Grid size={{ xs: 12, md: 6 }}>
               <Typography variant="h6" gutterBottom>Personality Configuration</Typography>
               <Stack spacing={3} sx={{ mt: 2 }}>
                 
                 <Box>
                   <Typography gutterBottom>Formality (Casual ↔ Formal)</Typography>
                   <Slider 
+                    aria-label="Formality"
                     value={traits.formality} 
                     min={0} max={1} step={0.1}
                     valueLabelDisplay="auto"
@@ -138,6 +148,7 @@ export default function AgentBuilder() {
                 <Box>
                   <Typography gutterBottom>Verbosity (Concise ↔ Detailed)</Typography>
                   <Slider 
+                    aria-label="Verbosity"
                     value={traits.verbosity} 
                     min={0} max={1} step={0.1}
                     valueLabelDisplay="auto"
@@ -148,6 +159,7 @@ export default function AgentBuilder() {
                 <Box>
                   <Typography gutterBottom>Creativity (Conservative ↔ Innovative)</Typography>
                   <Slider 
+                    aria-label="Creativity"
                     value={traits.creativity} 
                     min={0} max={1} step={0.1}
                     valueLabelDisplay="auto"
@@ -158,6 +170,7 @@ export default function AgentBuilder() {
                 <Box>
                   <Typography gutterBottom>Empathy (Robot ↔ Empathetic)</Typography>
                   <Slider 
+                    aria-label="Empathy"
                     value={traits.empathy} 
                     min={0} max={1} step={0.1}
                     valueLabelDisplay="auto"
@@ -168,6 +181,7 @@ export default function AgentBuilder() {
                  <Box>
                   <Typography gutterBottom>Assertiveness (Passive ↔ Assertive)</Typography>
                   <Slider 
+                    aria-label="Assertiveness"
                     value={traits.assertiveness} 
                     min={0} max={1} step={0.1}
                     valueLabelDisplay="auto"
@@ -181,8 +195,14 @@ export default function AgentBuilder() {
 
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
             <Button onClick={() => navigate('/')}>Cancel</Button>
-            <Button type="submit" variant="contained" size="large">
-              {isEditing ? 'Save Changes' : 'Create Agent'}
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={submitting}
+              startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+            >
+              {submitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Agent')}
             </Button>
           </Box>
         </Box>
