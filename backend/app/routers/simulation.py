@@ -51,7 +51,8 @@ def get_simulations(
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    sims = db.query(models.Simulation).filter(
+    # Eagerly load messages to avoid N+1 problem
+    sims = db.query(models.Simulation).options(subqueryload(models.Simulation.messages)).filter(
         models.Simulation.owner_id == current_user.id
     ).order_by(models.Simulation.updated_at.desc()).all()
     return sims
@@ -132,9 +133,9 @@ async def step_simulation(
          raise HTTPException(status_code=500, detail="Could not determine next agent")
 
     # Format history for the agent
-    history_prompt = "Conversation History:\n"
-    for msg in recent_messages:
-        history_prompt += f"{msg.sender_name}: {msg.content}\n"
+    history_prompt = "Conversation History:\n" + "".join(
+        f"{msg.sender_name}: {msg.content}\n" for msg in recent_messages
+    )
     
     # Execution
     # We treat the history as the user prompt context

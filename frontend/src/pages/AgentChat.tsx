@@ -12,14 +12,13 @@ import {
   Divider,
   Breadcrumbs,
   Link as MuiLink,
-  Drawer,
   ListItemButton,
   Button
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import AddIcon from '@mui/icons-material/Add';
 import ChatIcon from '@mui/icons-material/Chat';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { getAgent, createSession, getSessions, executeSessionChat, getSessionHistory } from '../api/client';
 import type { Agent, ChatSession } from '../api/client';
 import { useNotification } from '../context/NotificationContext';
@@ -33,7 +32,6 @@ const DRAWER_WIDTH = 280;
 
 export default function AgentChat() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const [agent, setAgent] = useState<Agent | null>(null);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
@@ -71,7 +69,7 @@ export default function AgentChat() {
       const session = await createSession(id);
       setSessions([session, ...sessions]);
       selectSession(session.id);
-    } catch (err) {
+    } catch {
       showNotification("Failed to create session", "error");
     }
   };
@@ -86,7 +84,7 @@ export default function AgentChat() {
           content: h.content
       }));
       setMessages(typedHistory);
-    } catch (err) {
+    } catch {
       showNotification("Failed to load history", "error");
     } finally {
       setLoading(false);

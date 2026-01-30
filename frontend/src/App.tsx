@@ -9,7 +9,8 @@ import {
   Button
 } from '@mui/material';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Dashboard from './pages/Dashboard';
@@ -61,7 +62,7 @@ function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ProtectedRoute({ children }: { children: JSX.Element }) {
+function ProtectedRoute({ children }: { children: React.ReactElement }) {
   const token = useAuthStore((state) => state.token);
   if (!token) {
     return <Navigate to="/login" replace />;

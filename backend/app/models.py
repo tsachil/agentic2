@@ -67,7 +67,7 @@ class SimulationMessage(Base):
     __tablename__ = "simulation_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    simulation_id = Column(String, ForeignKey("simulations.id"))
+    simulation_id = Column(String, ForeignKey("simulations.id"), index=True)
     sender_id = Column(String) # Agent ID or 'user'
     sender_name = Column(String)
     content = Column(Text)
