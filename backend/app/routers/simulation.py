@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Tuple, Optional
 from .. import database, models, schemas, auth, execution
 
 router = APIRouter(
@@ -69,18 +70,14 @@ def get_simulation(
         raise HTTPException(status_code=404, detail="Simulation not found")
     return sim
 
-@router.post("/{sim_id}/step", response_model=schemas.SimulationMessageResponse)
-async def step_simulation(
-    sim_id: str, 
-    db: Session = Depends(database.get_db), 
-    current_user: models.User = Depends(auth.get_current_user)
-):
+def get_simulation_context(db: Session, sim_id: str, user_id: int) -> Tuple[Optional[models.Simulation], Optional[models.Agent], List[models.SimulationMessage]]:
     sim = db.query(models.Simulation).filter(
         models.Simulation.id == sim_id,
-        models.Simulation.owner_id == current_user.id
+        models.Simulation.owner_id == user_id
     ).first()
+
     if not sim:
-        raise HTTPException(status_code=404, detail="Simulation not found")
+        return None, None, []
 
     # Simple Round-Robin Logic
     # 1. Get last message to see who spoke
@@ -105,6 +102,35 @@ async def step_simulation(
         models.SimulationMessage.simulation_id == sim_id
     ).order_by(models.SimulationMessage.created_at.asc()).limit(10).all()
     
+    return sim, agent, recent_messages
+
+def save_simulation_message(db: Session, sim_id: str, agent_id: str, agent_name: str, content: str) -> models.SimulationMessage:
+    new_msg = models.SimulationMessage(
+        simulation_id=sim_id,
+        sender_id=agent_id,
+        sender_name=agent_name,
+        content=content
+    )
+    db.add(new_msg)
+    db.commit()
+    db.refresh(new_msg)
+    return new_msg
+
+@router.post("/{sim_id}/step", response_model=schemas.SimulationMessageResponse)
+async def step_simulation(
+    sim_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    sim, agent, recent_messages = await run_in_threadpool(get_simulation_context, db, sim_id, current_user.id)
+
+    if not sim:
+        raise HTTPException(status_code=404, detail="Simulation not found")
+
+    if not agent:
+         # Should not happen if logic is correct but safe handling
+         raise HTTPException(status_code=500, detail="Could not determine next agent")
+
     # Format history for the agent
     history_prompt = "Conversation History:\n"
     for msg in recent_messages:
@@ -119,14 +145,13 @@ async def step_simulation(
     )
     
     # 4. Save response
-    new_msg = models.SimulationMessage(
-        simulation_id=sim.id,
-        sender_id=agent.id,
-        sender_name=agent.name,
-        content=response_text
+    new_msg = await run_in_threadpool(
+        save_simulation_message,
+        db,
+        sim.id,
+        agent.id,
+        agent.name,
+        response_text
     )
-    db.add(new_msg)
-    db.commit()
-    db.refresh(new_msg)
     
     return new_msg
