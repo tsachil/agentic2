@@ -107,9 +107,9 @@ async def step_simulation(
     ).order_by(models.SimulationMessage.created_at.asc()).limit(10).all()
     
     # Format history for the agent
-    history_prompt = "Conversation History:\n"
-    for msg in recent_messages:
-        history_prompt += f"{msg.sender_name}: {msg.content}\n"
+    history_prompt = "Conversation History:\n" + "".join(
+        f"{msg.sender_name}: {msg.content}\n" for msg in recent_messages
+    )
     
     # Execution
     # We treat the history as the user prompt context
