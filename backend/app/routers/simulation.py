@@ -45,6 +45,16 @@ def create_simulation(
     
     return new_sim
 
+@router.get("/", response_model=List[schemas.SimulationResponse])
+def get_simulations(
+    db: Session = Depends(database.get_db), 
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    sims = db.query(models.Simulation).filter(
+        models.Simulation.owner_id == current_user.id
+    ).order_by(models.Simulation.updated_at.desc()).all()
+    return sims
+
 @router.get("/{sim_id}", response_model=schemas.SimulationResponse)
 def get_simulation(
     sim_id: str, 

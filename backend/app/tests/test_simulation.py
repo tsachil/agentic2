@@ -54,3 +54,18 @@ def test_step_simulation(mock_execute, client, auth_token, agents):
     assert data["content"] == "This is a mocked response."
     assert data["sender_id"] in agent_ids
     assert mock_execute.called
+
+def test_list_simulations(client, auth_token, agents):
+    agent_ids = [a["id"] for a in agents]
+    
+    # Create two sims
+    client.post("/simulations/", json={"name": "Sim 1", "agent_ids": agent_ids, "initial_topic": "T1"}, headers={"Authorization": f"Bearer {auth_token}"})
+    client.post("/simulations/", json={"name": "Sim 2", "agent_ids": agent_ids, "initial_topic": "T2"}, headers={"Authorization": f"Bearer {auth_token}"})
+    
+    response = client.get("/simulations/", headers={"Authorization": f"Bearer {auth_token}"})
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data) == 2
+    names = [s["name"] for s in data]
+    assert "Sim 1" in names
+    assert "Sim 2" in names

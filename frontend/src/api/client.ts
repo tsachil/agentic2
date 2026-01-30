@@ -145,6 +145,11 @@ export const createSimulation = async (name: string, agent_ids: string[], initia
   return response.data;
 };
 
+export const getSimulations = async () => {
+  const response = await apiClient.get<Simulation[]>('/simulations/');
+  return response.data;
+};
+
 export const getSimulation = async (id: string) => {
   const response = await apiClient.get<Simulation>(`/simulations/${id}`);
   return response.data;
