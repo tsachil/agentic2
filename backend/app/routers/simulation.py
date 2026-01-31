@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.concurrency import run_in_threadpool
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, subqueryload
 from typing import List, Tuple, Optional
 from .. import database, models, schemas, auth, execution
 
@@ -139,7 +139,7 @@ async def step_simulation(
     
     # Execution
     # We treat the history as the user prompt context
-    response_text = await execution.execution_service.execute_agent(
+    response_text = await execution.execution_service.execute_agent_async(
         agent, 
         user_prompt=f"{history_prompt}\nResponse as {agent.name}:",
         history=[] # We provide context in the prompt itself for multi-agent simulation for simplicity

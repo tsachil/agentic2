@@ -33,35 +33,44 @@ class ExecutionService:
             
         return prompt
 
-    def execute_agent(self, agent_model: Any, user_prompt: str, history: List[Dict[str, str]] = []) -> str:
+    def _prepare_model_and_history(self, agent_model: Any, history: List[Dict[str, str]] = []):
         system_prompt = self.construct_system_prompt(
             agent_model.name, 
             agent_model.purpose, 
             agent_model.personality_config or {}
         )
 
+        # Initialize model with system instruction
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            generation_config=self.generation_config,
+            system_instruction=system_prompt
+        )
+
+        # Convert history to Gemini format
+        # Gemini expects 'user' and 'model' roles
+        chat_history = []
+        for msg in history:
+            role = "user" if msg["role"] == "user" else "model"
+            chat_history.append({"role": role, "parts": [msg["content"]]})
+
+        return model, chat_history
+
+    def execute_agent(self, agent_model: Any, user_prompt: str, history: List[Dict[str, str]] = []) -> str:
         try:
-            # Initialize model with system instruction
-            model = genai.GenerativeModel(
-                model_name="gemini-2.5-flash",
-                generation_config=self.generation_config,
-                system_instruction=system_prompt
-            )
-
-            # Convert history to Gemini format
-            # Gemini expects 'user' and 'model' roles
-            chat_history = []
-            for msg in history:
-                role = "user" if msg["role"] == "user" else "model"
-                chat_history.append({"role": role, "parts": [msg["content"]]})
-
-            # Start chat with history
+            model, chat_history = self._prepare_model_and_history(agent_model, history)
             chat = model.start_chat(history=chat_history)
-            
-            # Send message
+            response = chat.send_message(user_prompt)
+            return response.text
+        except Exception as e:
+            return f"Error executing agent: {str(e)}"
+
+    async def execute_agent_async(self, agent_model: Any, user_prompt: str, history: List[Dict[str, str]] = []) -> str:
+        try:
+            model, chat_history = self._prepare_model_and_history(agent_model, history)
+            chat = model.start_chat(history=chat_history)
             response = await chat.send_message_async(user_prompt)
             return response.text
-            
         except Exception as e:
             return f"Error executing agent: {str(e)}"
 

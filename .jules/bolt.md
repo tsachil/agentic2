@@ -1,3 +1,7 @@
 ## 2026-01-30 - N+1 Query in Simulation List
 **Learning:** The `get_simulations` endpoint was suffering from a classic N+1 query problem because the `SimulationResponse` Pydantic model includes a list of messages, but the SQLAlchemy query for `Simulation` was not eagerly loading them. This resulted in a separate query for each simulation to fetch its messages, causing poor performance as the number of simulations grew.
 **Action:** Used `subqueryload` in the SQLAlchemy query to fetch all related messages in a single additional query, reducing the complexity from O(N) to O(1) database round trips. Always check Pydantic models for nested relationships and ensure corresponding eager loading is implemented in the query.
+
+## 2026-02-01 - Async vs Sync Execution in FastAPI
+**Learning:** Found a critical `SyntaxError` where `await` was used inside a synchronous `def` function in `execution.py`. This highlights the importance of matching function signatures (`async def` vs `def`) with their internal logic. Also, FastAPI handles `def` path operations in a threadpool, but blocking calls inside `async def` block the event loop.
+**Action:** Split `execute_agent` into `execute_agent` (sync) and `execute_agent_async` (async) to support both synchronous contexts (like standard endpoints) and asynchronous contexts (like high-concurrency simulation steps). Always verify `await` usage matches the function definition.

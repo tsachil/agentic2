@@ -66,8 +66,8 @@ async def test_concurrent_step_simulation_performance(async_client, client, auth
     mock_msg.sender_name = "User"
     mock_msg.content = "History"
 
-    # Mock execute_agent to be instant
-    with patch("app.execution.ExecutionService.execute_agent", new_callable=AsyncMock) as mock_execute, \
+    # Mock execute_agent_async to be instant
+    with patch("app.execution.ExecutionService.execute_agent_async", new_callable=AsyncMock) as mock_execute, \
          patch("app.routers.simulation.get_simulation_context") as mock_get_context, \
          patch("app.routers.simulation.save_simulation_message") as mock_save:
 

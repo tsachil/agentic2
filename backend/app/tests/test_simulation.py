@@ -30,7 +30,7 @@ def test_create_simulation(client, auth_token, agents):
     assert data["name"] == "Test Sim"
     assert len(data["messages"]) == 1 # System message
 
-@patch("app.execution.ExecutionService.execute_agent", new_callable=AsyncMock)
+@patch("app.execution.ExecutionService.execute_agent_async", new_callable=AsyncMock)
 def test_step_simulation(mock_execute, client, auth_token, agents):
     # Setup sim
     agent_ids = [a["id"] for a in agents]
