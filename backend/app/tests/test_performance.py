@@ -71,7 +71,15 @@ async def test_concurrent_step_simulation_performance(async_client, client, auth
          patch("app.routers.simulation.get_simulation_context") as mock_get_context, \
          patch("app.routers.simulation.save_simulation_message") as mock_save:
 
-        mock_execute.return_value = "Response"
+        mock_execute.return_value = {
+            "response_text": "Response",
+            "log_data": {
+                "prompt_context": {},
+                "raw_response": "Response",
+                "thought_process": "Thinking...",
+                "execution_time_ms": 100
+            }
+        }
 
         def slow_get_context(*args, **kwargs):
             time.sleep(0.1) # Simulate 100ms latency

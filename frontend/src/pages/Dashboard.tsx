@@ -42,6 +42,20 @@ export default function Dashboard() {
             <Button 
             variant="outlined" 
             sx={{ mr: 2 }}
+            onClick={() => navigate('/logs')}
+            >
+            Flight Recorder
+            </Button>
+            <Button 
+            variant="outlined" 
+            sx={{ mr: 2 }}
+            onClick={() => navigate('/tools')}
+            >
+            Tools
+            </Button>
+            <Button 
+            variant="outlined" 
+            sx={{ mr: 2 }}
             onClick={() => navigate('/simulation')}
             >
             Run Simulation

@@ -17,6 +17,8 @@ import Dashboard from './pages/Dashboard';
 import AgentBuilder from './pages/AgentBuilder';
 import AgentChat from './pages/AgentChat';
 import SimulationPage from './pages/SimulationPage';
+import AgentInspector from './pages/AgentInspector';
+import ToolLibrary from './pages/ToolLibrary';
 import { useAuthStore } from './store/authStore';
 
 const theme = createTheme({
@@ -104,6 +106,16 @@ function App() {
         <Route path="/simulation" element={
           <ProtectedRoute>
             <SimulationPage />
+          </ProtectedRoute>
+        } />
+        <Route path="/logs" element={
+          <ProtectedRoute>
+            <AgentInspector />
+          </ProtectedRoute>
+        } />
+        <Route path="/tools" element={
+          <ProtectedRoute>
+            <ToolLibrary />
           </ProtectedRoute>
         } />
       </Routes>

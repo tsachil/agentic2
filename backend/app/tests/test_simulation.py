@@ -41,7 +41,15 @@ def test_step_simulation(mock_execute, client, auth_token, agents):
     ).json()
     
     # Mock LLM response
-    mock_execute.return_value = "This is a mocked response."
+    mock_execute.return_value = {
+        "response_text": "This is a mocked response.",
+        "log_data": {
+            "prompt_context": {},
+            "raw_response": "This is a mocked response.",
+            "thought_process": "Thinking...",
+            "execution_time_ms": 100
+        }
+    }
     
     # Step
     response = client.post(

@@ -22,10 +22,13 @@ import { useParams, Link } from 'react-router-dom';
 import { getAgent, createSession, getSessions, executeSessionChat, getSessionHistory } from '../api/client';
 import type { Agent, ChatSession } from '../api/client';
 import { useNotification } from '../context/NotificationContext';
+import ConstructionIcon from '@mui/icons-material/Construction';
+import { Chip } from '@mui/material';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  tool_calls?: any[];
 }
 
 const DRAWER_WIDTH = 280;
@@ -79,9 +82,10 @@ export default function AgentChat() {
     setLoading(true);
     try {
       const history = await getSessionHistory(sessionId);
-      const typedHistory = history.map(h => ({
+      const typedHistory: Message[] = history.map(h => ({
           role: h.role as 'user' | 'assistant',
-          content: h.content
+          content: h.content,
+          tool_calls: h.tool_calls
       }));
       setMessages(typedHistory);
     } catch {
@@ -105,7 +109,11 @@ export default function AgentChat() {
 
     try {
       const result = await executeSessionChat(currentSessionId, input);
-      const assistantMessage: Message = { role: 'assistant', content: result.response };
+      const assistantMessage: Message = { 
+        role: 'assistant', 
+        content: result.response,
+        tool_calls: result.tool_calls
+      };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error) {
       console.error("Chat error", error);
@@ -192,8 +200,28 @@ export default function AgentChat() {
                     bgcolor: msg.role === 'user' ? 'primary.main' : 'white',
                     color: msg.role === 'user' ? 'white' : 'text.primary',
                     maxWidth: '70%',
-                    borderRadius: 2
+                    borderRadius: 2,
+                    position: 'relative'
                     }}>
+                    {msg.tool_calls && msg.tool_calls.length > 0 && (
+                        <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {msg.tool_calls.map((call, i) => (
+                                <Chip 
+                                    key={i}
+                                    icon={<ConstructionIcon sx={{ fontSize: '12px !important' }} />}
+                                    label={`Used tool: ${call.tool}`}
+                                    size="small"
+                                    variant="outlined"
+                                    sx={{ 
+                                        fontSize: '10px', 
+                                        height: '20px',
+                                        bgcolor: 'rgba(0,0,0,0.03)',
+                                        borderColor: 'divider'
+                                    }}
+                                />
+                            ))}
+                        </Box>
+                    )}
                     <Typography variant="body1">{msg.content}</Typography>
                     </Paper>
                 </ListItem>

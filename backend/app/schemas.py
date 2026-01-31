@@ -43,7 +43,26 @@ class AgentResponse(AgentBase):
     status: AgentStatus
     created_at: datetime
     updated_at: Optional[datetime]
+    tools: List['ToolResponse'] = []
     
+    model_config = ConfigDict(from_attributes=True)
+
+# Tool Schemas
+class ToolBase(BaseModel):
+    name: str
+    description: str
+    type: str
+    parameter_schema: Dict[str, Any] = {}
+    configuration: Dict[str, Any] = {}
+    is_active: bool = True
+
+class ToolCreate(ToolBase):
+    pass
+
+class ToolResponse(ToolBase):
+    id: str
+    created_at: datetime
+
     model_config = ConfigDict(from_attributes=True)
 
 class PromptRequest(BaseModel):
@@ -52,6 +71,7 @@ class PromptRequest(BaseModel):
 
 class ChatResponse(BaseModel):
     response: str
+    tool_calls: Optional[List[Dict[str, Any]]] = []
 
 class ChatSessionBase(BaseModel):
     name: str
@@ -76,6 +96,7 @@ class ChatMessageCreate(ChatMessageBase):
 class ChatMessageResponse(ChatMessageBase):
     id: int
     created_at: datetime
+    tool_calls: Optional[List[Dict[str, Any]]] = []
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -91,6 +112,7 @@ class SimulationMessageCreate(SimulationMessageBase):
 class SimulationMessageResponse(SimulationMessageBase):
     id: int
     created_at: datetime
+    tool_calls: Optional[List[Dict[str, Any]]] = []
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -108,3 +130,31 @@ class SimulationResponse(SimulationBase):
     messages: List[SimulationMessageResponse] = []
     
     model_config = ConfigDict(from_attributes=True)
+
+# Log Schemas
+class AgentExecutionLogBase(BaseModel):
+    agent_id: str
+    session_id: Optional[str] = None
+    simulation_id: Optional[str] = None
+    prompt_context: Dict[str, Any]
+    raw_response: str
+    thought_process: Optional[str] = None
+    execution_time_ms: int
+
+class AgentExecutionLogCreate(AgentExecutionLogBase):
+    pass
+
+class AgentExecutionLogResponse(AgentExecutionLogBase):
+    id: str
+    created_at: datetime
+    tool_events: Optional[List[Dict[str, Any]]] = []
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ToolExecutionLog(BaseModel):
+    tool_name: str
+    agent_id: str
+    input_args: Dict[str, Any]
+    output_result: str
+    created_at: datetime
+    execution_time_ms: int = 0

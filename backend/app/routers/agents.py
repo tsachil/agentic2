@@ -103,17 +103,40 @@ async def execute_session_chat(
     db_history = db.query(models.ChatMessage).filter(models.ChatMessage.session_id == session_id).order_by(models.ChatMessage.created_at.asc()).all()
     history_dicts = [{"role": msg.role, "content": msg.content} for msg in db_history]
     
-    response_text = await execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
+    execution_result = await execution.execution_service.execute_agent(agent, request.prompt, history_dicts)
+    response_text = execution_result["response_text"]
+    log_data = execution_result["log_data"]
+    tool_calls = log_data.get("tool_events", [])
     
-    # Save Assistant Message
-    assistant_msg = models.ChatMessage(session_id=session_id, role="assistant", content=response_text)
+    # Merge tool_events into prompt_context for persistence
+    log_context = log_data["prompt_context"]
+    log_context["tool_events"] = tool_calls
+
+    # Save Execution Log
+    new_log = models.AgentExecutionLog(
+        agent_id=agent.id,
+        session_id=session_id,
+        prompt_context=log_context,
+        raw_response=log_data["raw_response"],
+        thought_process=log_data["thought_process"],
+        execution_time_ms=log_data["execution_time_ms"]
+    )
+    db.add(new_log)
+    
+    # Save Assistant Message with Tool Calls
+    assistant_msg = models.ChatMessage(
+        session_id=session_id, 
+        role="assistant", 
+        content=response_text,
+        tool_calls=tool_calls
+    )
     db.add(assistant_msg)
     
     # Update session timestamp
     session.updated_at = func.now()
     
     db.commit()
-    return {"response": response_text}
+    return {"response": response_text, "tool_calls": tool_calls}
 
 @router.get("/sessions/{session_id}/history", response_model=List[schemas.ChatMessageResponse])
 def get_session_history(
@@ -140,3 +163,50 @@ def delete_agent(agent_id: str, db: Session = Depends(database.get_db), current_
     db.delete(db_agent)
     db.commit()
     return None
+
+@router.get("/{agent_id}/tools", response_model=List[schemas.ToolResponse])
+def get_agent_tools(
+    agent_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
+    if not agent:
+        raise HTTPException(status_code=404, detail="Agent not found")
+    return agent.tools
+
+@router.post("/{agent_id}/tools/{tool_id}")
+def add_tool_to_agent(
+    agent_id: str,
+    tool_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
+    tool = db.query(models.Tool).filter(models.Tool.id == tool_id).first()
+    
+    if not agent or not tool:
+        raise HTTPException(status_code=404, detail="Agent or Tool not found")
+        
+    if tool not in agent.tools:
+        agent.tools.append(tool)
+        db.commit()
+    return {"message": "Tool added"}
+
+@router.delete("/{agent_id}/tools/{tool_id}")
+def remove_tool_from_agent(
+    agent_id: str,
+    tool_id: str,
+    db: Session = Depends(database.get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
+    tool = db.query(models.Tool).filter(models.Tool.id == tool_id).first()
+    
+    if not agent or not tool:
+        raise HTTPException(status_code=404, detail="Agent or Tool not found")
+        
+    if tool in agent.tools:
+        agent.tools.remove(tool)
+        db.commit()
+    return {"message": "Tool removed"}

@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from .routers import auth, users, agents, simulation
+from .routers import auth, users, agents, simulation, logs, tools
 from .database import engine, Base
 
 # Create tables (For dev only - use Alembic in prod)
@@ -21,6 +21,8 @@ app.include_router(auth.router)
 app.include_router(users.router)
 app.include_router(agents.router)
 app.include_router(simulation.router)
+app.include_router(logs.router)
+app.include_router(tools.router)
 
 @app.get("/")
 def read_root():

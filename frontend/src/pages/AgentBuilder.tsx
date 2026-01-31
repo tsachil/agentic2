@@ -9,11 +9,19 @@ import {
   Slider,
   Grid,
   Stack,
-  CircularProgress
+  CircularProgress,
+  Switch,
+  FormControlLabel,
+  Divider,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon
 } from '@mui/material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { createAgent, getAgent, updateAgent } from '../api/client';
-import type { AgentCreate } from '../api/client';
+import { createAgent, getAgent, updateAgent, getTools, addToolToAgent, removeToolFromAgent } from '../api/client';
+import type { AgentCreate, Tool } from '../api/client';
+import ConstructionIcon from '@mui/icons-material/Construction';
 
 export default function AgentBuilder() {
   const navigate = useNavigate();
@@ -26,6 +34,9 @@ export default function AgentBuilder() {
   const [description, setDescription] = useState('');
   const [purpose, setPurpose] = useState('');
   
+  const [allTools, setAllTools] = useState<Tool[]>([]);
+  const [activeToolIds, setActiveToolIds] = useState<string[]>([]);
+  
   // Personality Traits (0.0 to 1.0)
   const [traits, setTraits] = useState({
     formality: 0.5,
@@ -36,6 +47,7 @@ export default function AgentBuilder() {
   });
 
   useEffect(() => {
+    fetchTools();
     if (isEditing && id) {
       (async () => {
         setLoading(true);
@@ -47,6 +59,9 @@ export default function AgentBuilder() {
           if (agent.personality_config) {
             setTraits(prev => ({ ...prev, ...agent.personality_config }));
           }
+          if (agent.tools) {
+            setActiveToolIds(agent.tools.map(t => t.id));
+          }
         } catch (error) {
           console.error(error);
         } finally {
@@ -55,6 +70,32 @@ export default function AgentBuilder() {
       })();
     }
   }, [id, isEditing]);
+
+  const fetchTools = async () => {
+    try {
+      const data = await getTools();
+      setAllTools(data);
+    } catch (error) {
+      console.error("Failed to fetch tools", error);
+    }
+  };
+
+  const handleToolToggle = async (toolId: string) => {
+    if (!id) return;
+    
+    const isActive = activeToolIds.includes(toolId);
+    try {
+      if (isActive) {
+        await removeToolFromAgent(id, toolId);
+        setActiveToolIds(prev => prev.filter(tid => tid !== toolId));
+      } else {
+        await addToolToAgent(id, toolId);
+        setActiveToolIds(prev => [...prev, toolId]);
+      }
+    } catch (error) {
+      console.error("Failed to toggle tool", error);
+    }
+  };
 
   const handleTraitChange = (trait: keyof typeof traits) => (_: Event, newValue: number | number[]) => {
     setTraits(prev => ({ ...prev, [trait]: newValue as number }));
@@ -191,6 +232,44 @@ export default function AgentBuilder() {
 
               </Stack>
             </Grid>
+
+            {/* Tools Section */}
+            {isEditing && (
+                <Grid size={{ xs: 12 }}>
+                    <Divider sx={{ my: 4 }} />
+                    <Typography variant="h6" gutterBottom>Capabilities & Tools</Typography>
+                    <Typography variant="body2" color="text.secondary" paragraph>
+                        Enable specific tools to allow this agent to perform actions or fetch external data.
+                    </Typography>
+                    
+                    {allTools.length === 0 ? (
+                        <Box sx={{ p: 3, bgcolor: 'grey.50', borderRadius: 2, textAlign: 'center' }}>
+                            <Typography variant="body2" color="text.secondary">
+                                No tools available in the library. <Button onClick={() => navigate('/tools')}>Go to Tool Library</Button>
+                            </Typography>
+                        </Box>
+                    ) : (
+                        <List sx={{ width: '100%', bgcolor: 'background.paper', borderRadius: 2, border: '1px solid #eee' }}>
+                            {allTools.map((tool) => (
+                                <ListItem key={tool.id} divider>
+                                    <ListItemIcon>
+                                        <ConstructionIcon color={activeToolIds.includes(tool.id) ? "primary" : "disabled"} />
+                                    </ListItemIcon>
+                                    <ListItemText 
+                                        primary={tool.name} 
+                                        secondary={tool.description} 
+                                    />
+                                    <Switch
+                                        edge="end"
+                                        onChange={() => handleToolToggle(tool.id)}
+                                        checked={activeToolIds.includes(tool.id)}
+                                    />
+                                </ListItem>
+                            ))}
+                        </List>
+                    )}
+                </Grid>
+            )}
           </Grid>
 
           <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>

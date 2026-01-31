@@ -20,10 +20,12 @@ import {
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import AddIcon from '@mui/icons-material/Add';
 import SmartToyIcon from '@mui/icons-material/SmartToy';
+import ConstructionIcon from '@mui/icons-material/Construction';
 import { Link } from 'react-router-dom';
 import { getAgents, createSimulation, getSimulation, stepSimulation, getSimulations } from '../api/client';
 import type { Agent, Simulation } from '../api/client';
 import { useNotification } from '../context/NotificationContext';
+import { Chip } from '@mui/material';
 
 const DRAWER_WIDTH = 280;
 
@@ -240,6 +242,25 @@ export default function SimulationPage() {
                             <Typography variant="subtitle2" color="primary" sx={{ fontWeight: 'bold' }}>
                             {msg.sender_name}
                             </Typography>
+                            {msg.tool_calls && msg.tool_calls.length > 0 && (
+                                <Box sx={{ mb: 1, display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 0.5 }}>
+                                    {msg.tool_calls.map((call, i) => (
+                                        <Chip 
+                                            key={i}
+                                            icon={<ConstructionIcon sx={{ fontSize: '12px !important' }} />}
+                                            label={`Used tool: ${call.tool}`}
+                                            size="small"
+                                            variant="outlined"
+                                            sx={{ 
+                                                fontSize: '10px', 
+                                                height: '20px',
+                                                bgcolor: 'rgba(0,0,0,0.03)',
+                                                borderColor: 'divider'
+                                            }}
+                                        />
+                                    ))}
+                                </Box>
+                            )}
                             <Typography variant="body1" sx={{ whiteSpace: 'pre-wrap' }}>{msg.content}</Typography>
                             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1, textAlign: 'right' }}>
                                 {new Date(msg.created_at).toLocaleTimeString()}

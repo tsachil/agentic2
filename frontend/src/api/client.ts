@@ -37,7 +37,83 @@ export interface Agent {
   };
   status: string;
   created_at: string;
+  tools?: Tool[];
 }
+
+// Tool API
+export interface Tool {
+  id: string;
+  name: string;
+  description: string;
+  type: 'builtin' | 'api';
+  parameter_schema: any;
+  configuration: any;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ToolCreate {
+  name: string;
+  description: string;
+  type: 'builtin' | 'api';
+  parameter_schema: any;
+  configuration: any;
+}
+
+export const getTools = async () => {
+  const response = await apiClient.get<Tool[]>('/tools/');
+  return response.data;
+};
+
+export const createTool = async (tool: ToolCreate) => {
+  const response = await apiClient.post<Tool>('/tools/', tool);
+  return response.data;
+};
+
+export const updateTool = async (id: string, tool: ToolCreate) => {
+  const response = await apiClient.put<Tool>(`/tools/${id}`, tool);
+  return response.data;
+};
+
+export const deleteTool = async (id: string) => {
+  await apiClient.delete(`/tools/${id}`);
+};
+
+export const seedTools = async () => {
+  await apiClient.post('/tools/seed');
+};
+
+export const addToolToAgent = async (agentId: string, toolId: string) => {
+  await apiClient.post(`/agents/${agentId}/tools/${toolId}`);
+};
+
+export const removeToolFromAgent = async (agentId: string, toolId: string) => {
+  await apiClient.delete(`/agents/${agentId}/tools/${toolId}`);
+};
+
+export const getAgentTools = async (agentId: string) => {
+  const response = await apiClient.get<Tool[]>(`/agents/${agentId}/tools`);
+  return response.data;
+};
+
+export interface ToolExecutionLog {
+  tool_name: string;
+  agent_id: string;
+  input_args: any;
+  output_result: string;
+  created_at: string;
+  execution_time_ms: number;
+}
+
+export const getToolLogs = async (toolId: string) => {
+  const response = await apiClient.get<ToolExecutionLog[]>(`/tools/${toolId}/logs`);
+  return response.data;
+};
+
+export const testTool = async (toolId: string, arguments_payload: any) => {
+  const response = await apiClient.post<{result: string}>(`/tools/${toolId}/test`, arguments_payload);
+  return response.data;
+};
 
 export interface AgentCreate {
   name: string;
@@ -108,14 +184,14 @@ export const getSessions = async (agentId: string) => {
 };
 
 export const executeSessionChat = async (sessionId: string, prompt: string) => {
-  const response = await apiClient.post<{response: string}>(`/agents/sessions/${sessionId}/execute`, {
+  const response = await apiClient.post<{response: string, tool_calls?: any[]}>(`/agents/sessions/${sessionId}/execute`, {
     prompt
   });
   return response.data;
 };
 
 export const getSessionHistory = async (sessionId: string) => {
-  const response = await apiClient.get<{role: string, content: string}[]>(`/agents/sessions/${sessionId}/history`);
+  const response = await apiClient.get<{role: string, content: string, tool_calls?: any[]}[]>(`/agents/sessions/${sessionId}/history`);
   return response.data;
 };
 
@@ -125,6 +201,7 @@ export interface SimulationMessage {
   sender_id: string;
   sender_name: string;
   content: string;
+  tool_calls?: any[];
   created_at: string;
 }
 
@@ -157,5 +234,37 @@ export const getSimulation = async (id: string) => {
 
 export const stepSimulation = async (id: string) => {
   const response = await apiClient.post<SimulationMessage>(`/simulations/${id}/step`);
+  return response.data;
+};
+
+// Logs API
+export interface AgentExecutionLog {
+  id: string;
+  agent_id: string;
+  session_id?: string;
+  simulation_id?: string;
+  prompt_context: {
+    system_prompt: string;
+    history: {role: string, content: string}[];
+    user_prompt: string;
+  };
+  raw_response: string;
+  thought_process?: string;
+  tool_events?: {
+    tool: string;
+    input: any;
+    output: string;
+  }[];
+  execution_time_ms: number;
+  created_at: string;
+}
+
+export const getLogs = async (params?: { agent_id?: string; simulation_id?: string; session_id?: string; skip?: number; limit?: number }) => {
+  const response = await apiClient.get<AgentExecutionLog[]>('/logs/', { params });
+  return response.data;
+};
+
+export const getLog = async (id: string) => {
+  const response = await apiClient.get<AgentExecutionLog>(`/logs/${id}`);
   return response.data;
 };

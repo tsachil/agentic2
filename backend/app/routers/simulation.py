@@ -63,7 +63,7 @@ def get_simulation(
     db: Session = Depends(database.get_db), 
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    sim = db.query(models.Simulation).filter(
+    sim = db.query(models.Simulation).options(subqueryload(models.Simulation.messages)).filter(
         models.Simulation.id == sim_id,
         models.Simulation.owner_id == current_user.id
     ).first()
@@ -105,12 +105,13 @@ def get_simulation_context(db: Session, sim_id: str, user_id: int) -> Tuple[Opti
     
     return sim, agent, recent_messages
 
-def save_simulation_message(db: Session, sim_id: str, agent_id: str, agent_name: str, content: str) -> models.SimulationMessage:
+def save_simulation_message(db: Session, sim_id: str, agent_id: str, agent_name: str, content: str, tool_calls: Optional[List[dict]] = None) -> models.SimulationMessage:
     new_msg = models.SimulationMessage(
         simulation_id=sim_id,
         sender_id=agent_id,
         sender_name=agent_name,
-        content=content
+        content=content,
+        tool_calls=tool_calls
     )
     db.add(new_msg)
     db.commit()
@@ -139,11 +140,30 @@ async def step_simulation(
     
     # Execution
     # We treat the history as the user prompt context
-    response_text = await execution.execution_service.execute_agent(
+    execution_result = await execution.execution_service.execute_agent(
         agent, 
         user_prompt=f"{history_prompt}\nResponse as {agent.name}:",
         history=[] # We provide context in the prompt itself for multi-agent simulation for simplicity
     )
+    
+    response_text = execution_result["response_text"]
+    log_data = execution_result["log_data"]
+    tool_calls = log_data.get("tool_events", [])
+
+    # Merge tool_events into prompt_context for persistence
+    log_context = log_data["prompt_context"]
+    log_context["tool_events"] = tool_calls
+
+    # Save Execution Log
+    new_log = models.AgentExecutionLog(
+        agent_id=agent.id,
+        simulation_id=sim.id,
+        prompt_context=log_context,
+        raw_response=log_data["raw_response"],
+        thought_process=log_data["thought_process"],
+        execution_time_ms=log_data["execution_time_ms"]
+    )
+    db.add(new_log)
     
     # 4. Save response
     new_msg = await run_in_threadpool(
@@ -152,7 +172,8 @@ async def step_simulation(
         sim.id,
         agent.id,
         agent.name,
-        response_text
+        response_text,
+        tool_calls
     )
     
     return new_msg
