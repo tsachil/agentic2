@@ -6,9 +6,11 @@ import {
   Typography, 
   Paper, 
   Container, 
-  Alert 
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import { apiClient } from '../api/client';
 import { useAuthStore } from '../store/authStore';
 
@@ -16,12 +18,14 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const login = useAuthStore((state) => state.login);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
     
     const formData = new FormData();
     formData.append('username', email);
@@ -33,8 +37,11 @@ export default function Login() {
       });
       login(response.data.access_token);
       navigate('/');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Login failed');
+    } catch (err) {
+      const error = err as AxiosError<{ detail: string }>;
+      setError(error.response?.data?.detail || 'Login failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,8 +82,9 @@ export default function Login() {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={isLoading}
           >
-            Sign In
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
             <Link to="/register" style={{ textDecoration: 'none' }}>

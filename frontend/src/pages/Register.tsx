@@ -6,9 +6,11 @@ import {
   Typography, 
   Paper, 
   Container, 
-  Alert 
+  Alert,
+  CircularProgress
 } from '@mui/material';
 import { useNavigate, Link } from 'react-router-dom';
+import { AxiosError } from 'axios';
 import { apiClient } from '../api/client';
 
 export default function Register() {
@@ -16,11 +18,13 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setIsLoading(true);
 
     try {
       await apiClient.post('/auth/register', {
@@ -29,8 +33,11 @@ export default function Register() {
         full_name: fullName
       });
       navigate('/login');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Registration failed');
+    } catch (err) {
+      const error = err as AxiosError<{ detail: string }>;
+      setError(error.response?.data?.detail || 'Registration failed');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -81,8 +88,9 @@ export default function Register() {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={isLoading}
           >
-            Register
+            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
             <Link to="/login" style={{ textDecoration: 'none' }}>

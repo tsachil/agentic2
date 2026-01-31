@@ -5,3 +5,7 @@
 ## 2024-05-22 - Async Button Feedback
 **Learning:** Users can easily double-submit or feel uncertain during async operations if the submit button lacks a loading state. Adding a spinner and disabled state is a high-impact, low-effort micro-interaction.
 **Action:** Always wrap async form submissions in a try/finally block that toggles a `submitting` state on the primary action button.
+
+## 2025-02-17 - Disabled Spinner Contrast
+**Learning:** Using `color="inherit"` on a spinner inside a disabled button results in low contrast (grey on grey/light grey), making it hard to see.
+**Action:** Use a specific color for the spinner or use a dedicated loading button component that handles contrast correctly in disabled states.
