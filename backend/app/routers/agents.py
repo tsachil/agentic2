@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, subqueryload
 from sqlalchemy import func
 from typing import List
 from datetime import datetime
@@ -23,7 +23,8 @@ def create_agent(agent: schemas.AgentCreate, db: Session = Depends(database.get_
 
 @router.get("/", response_model=List[schemas.AgentResponse])
 def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
-    agents = db.query(models.Agent).filter(models.Agent.owner_id == current_user.id).offset(skip).limit(limit).all()
+    # Use subqueryload to prevent N+1 query problem when fetching tools
+    agents = db.query(models.Agent).options(subqueryload(models.Agent.tools)).filter(models.Agent.owner_id == current_user.id).offset(skip).limit(limit).all()
     return agents
 
 @router.get("/{agent_id}", response_model=schemas.AgentResponse)
