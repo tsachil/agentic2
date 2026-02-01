@@ -43,3 +43,7 @@ frontend/.env.production.local
 
 # Backups
 backups/*.sql
+
+# SQLite
+*.db
+*.sqlite3
