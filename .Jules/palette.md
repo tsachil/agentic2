@@ -9,3 +9,7 @@
 ## 2025-02-17 - Disabled Spinner Contrast
 **Learning:** Using `color="inherit"` on a spinner inside a disabled button results in low contrast (grey on grey/light grey), making it hard to see.
 **Action:** Use a specific color for the spinner or use a dedicated loading button component that handles contrast correctly in disabled states.
+
+## 2025-02-18 - Tooltips on Disabled Elements
+**Learning:** Tooltips do not trigger on disabled buttons because disabled elements don't fire mouse events. This prevents users from learning *why* an action is disabled.
+**Action:** Always wrap disabled buttons in a `<span>` or `<div>` to capture the hover event for the Tooltip.

@@ -13,7 +13,8 @@ import {
   Breadcrumbs,
   Link as MuiLink,
   ListItemButton,
-  Button
+  Button,
+  Tooltip
 } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 import AddIcon from '@mui/icons-material/Add';
@@ -242,16 +243,32 @@ export default function AgentChat() {
         <Paper elevation={3} sx={{ p: 2, display: 'flex', gap: 1 }}>
           <TextField
             fullWidth
+            multiline
+            maxRows={4}
             placeholder="Type a message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
             disabled={loading || !currentSessionId}
             size="small"
           />
-          <IconButton color="primary" onClick={handleSend} disabled={loading || !input.trim() || !currentSessionId}>
-            <SendIcon />
-          </IconButton>
+          <Tooltip title="Send message (Enter)">
+            <span>
+              <IconButton
+                color="primary"
+                onClick={handleSend}
+                disabled={loading || !input.trim() || !currentSessionId}
+                aria-label="Send message"
+              >
+                <SendIcon />
+              </IconButton>
+            </span>
+          </Tooltip>
         </Paper>
       </Box>
     </Box>

@@ -21,7 +21,6 @@ type Order = 'asc' | 'desc';
 const AgentInspector: React.FC = () => {
   const [logs, setLogs] = useState<AgentExecutionLog[]>([]);
   const [agents, setAgents] = useState<Agent[]>([]);
-  const [loading, setLoading] = useState(false);
   
   // Search & Sort State
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,7 +55,6 @@ const AgentInspector: React.FC = () => {
   };
 
   const fetchLogs = async (silent = false) => {
-    if (!silent) setLoading(true);
     try {
       const data = await getLogs({ 
           limit: 100 // Fetch recent 100 logs
@@ -64,8 +62,6 @@ const AgentInspector: React.FC = () => {
       setLogs(data);
     } catch (error) {
       if (!silent) showNotification('Failed to fetch logs', 'error');
-    } finally {
-      if (!silent) setLoading(false);
     }
   };
 

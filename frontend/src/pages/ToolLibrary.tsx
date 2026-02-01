@@ -19,7 +19,6 @@ import { format } from 'date-fns';
 
 const ToolLibrary: React.FC = () => {
   const [tools, setTools] = useState<Tool[]>([]);
-  const [loading, setLoading] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [historyModalOpen, setHistoryModalOpen] = useState(false);
   const [testModalOpen, setTestModalOpen] = useState(false);
@@ -52,14 +51,11 @@ const ToolLibrary: React.FC = () => {
   }, []);
 
   const fetchTools = async () => {
-    setLoading(true);
     try {
       const data = await getTools();
       setTools(data);
     } catch (error) {
       showNotification('Failed to fetch tools', 'error');
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -217,7 +213,7 @@ const ToolLibrary: React.FC = () => {
         ) : (
             <Grid container spacing={3}>
                 {tools.map((tool) => (
-                    <Grid item xs={12} sm={6} md={4} key={tool.id}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tool.id}>
                         <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                             <CardContent sx={{ flexGrow: 1 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
