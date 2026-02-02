@@ -9,3 +9,7 @@
 ## 2025-02-17 - Disabled Spinner Contrast
 **Learning:** Using `color="inherit"` on a spinner inside a disabled button results in low contrast (grey on grey/light grey), making it hard to see.
 **Action:** Use a specific color for the spinner or use a dedicated loading button component that handles contrast correctly in disabled states.
+
+## 2025-02-17 - Chat Input Keyboard UX
+**Learning:** Users expect chat inputs to behave like standard messaging apps: Enter to send, Shift+Enter for new lines. Single-line inputs frustrate users who want to format their messages.
+**Action:** Use multiline inputs for chat interfaces and implement a `handleKeyDown` handler that detects `Enter` (send) vs `Shift+Enter` (newline).

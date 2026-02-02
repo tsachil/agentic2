@@ -11,7 +11,6 @@ import {
   Stack,
   CircularProgress,
   Switch,
-  FormControlLabel,
   Divider,
   List,
   ListItem,

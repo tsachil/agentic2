@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { 
     Box, Typography, Button, Grid, Card, CardContent, CardActions, Chip, Divider, 
     Dialog, DialogTitle, DialogContent, DialogActions, TextField, MenuItem, Select, FormControl, InputLabel,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Accordion, AccordionSummary, AccordionDetails
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Accordion, AccordionSummary, AccordionDetails, LinearProgress
 } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { getTools, deleteTool, seedTools, createTool, updateTool, getToolLogs, testTool } from '../api/client';
@@ -208,7 +208,7 @@ const ToolLibrary: React.FC = () => {
             </Button>
         </Box>
 
-        {tools.length === 0 ? (
+        {loading ? <LinearProgress sx={{ mb: 2 }} /> : tools.length === 0 ? (
             <Box sx={{ textAlign: 'center', mt: 8, color: 'text.secondary' }}>
                 <ConstructionIcon sx={{ fontSize: 60, mb: 2, opacity: 0.5 }} />
                 <Typography variant="h6">No tools found</Typography>
@@ -217,7 +217,7 @@ const ToolLibrary: React.FC = () => {
         ) : (
             <Grid container spacing={3}>
                 {tools.map((tool) => (
-                    <Grid item xs={12} sm={6} md={4} key={tool.id}>
+                    <Grid size={{ xs: 12, sm: 6, md: 4 }} key={tool.id}>
                         <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                             <CardContent sx={{ flexGrow: 1 }}>
                                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>

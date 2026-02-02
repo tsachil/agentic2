@@ -13,7 +13,7 @@ import {
     Button, Accordion, AccordionSummary, AccordionDetails, Typography,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip,
     Dialog, DialogTitle, DialogContent, DialogActions, Box, IconButton,
-    TextField, InputAdornment, TableSortLabel
+    TextField, InputAdornment, TableSortLabel, LinearProgress
 } from '@mui/material';
 
 type Order = 'asc' | 'desc';
@@ -170,6 +170,7 @@ const AgentInspector: React.FC = () => {
       {/* Main Content - Table View */}
       <div className="flex-1 overflow-y-auto p-6">
         <div className="max-w-7xl mx-auto">
+            {loading && <LinearProgress />}
             <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 2 }}>
                 <Table stickyHeader size="small">
                     <TableHead>
