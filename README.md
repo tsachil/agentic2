@@ -14,7 +14,7 @@ The Agentic Platform is a full-stack application for creating, managing, and obs
     *   Test tool functionality with a live testing modal.
 *   **Flight Recorder (Execution Logs)**:
     *   A detailed, real-time log of all agent activities.
-    *   Inspect the agent's full chain-of-thought, tool calls (with inputs/outputs), and final responses.
+    *   Inspect tool calls (with inputs/outputs) and final responses.
     *   Provides a tabular view with searching and sorting for easy analysis.
 *   **Tool Usage History**: View a complete log of all historical calls for each specific tool.
 
@@ -64,8 +64,8 @@ The platform is built with a modern web stack:
     This will build the backend and frontend containers and start the database and Redis services.
 
 4.  **Access the Application**:
-    *   **Frontend**: `http://localhost:5173`
-    *   **Backend API Docs**: `http://localhost:8000/docs`
+    *   **Frontend**: `http://localhost:5174`
+    *   **Backend API Docs**: `http://localhost:8001/docs`
 
 5.  **Seed Initial Data**:
     *   Navigate to the **Tools** page in the UI.
@@ -82,3 +82,9 @@ The platform is built with a modern web stack:
 4.  **Chat with the Agent**: Start a new chat session and test its capabilities, including its ability to use the tools you've assigned.
 5.  **Run a Simulation**: From the dashboard, select two or more agents, provide an initial topic, and start a simulation to see them interact.
 6.  **Inspect Behavior**: Go to the **Flight Recorder** page to see a detailed, searchable log of every action your agents take.
+
+## Logging Notes (Dev)
+
+The `/logs/ingest` endpoint is intended for development log shipping from the frontend.
+In production, protect this route with authentication or restrict it at the edge, and ensure
+request/response bodies are redacted to avoid leaking sensitive data.

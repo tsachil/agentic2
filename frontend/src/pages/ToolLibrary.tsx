@@ -308,6 +308,7 @@ const ToolLibrary: React.FC = () => {
                     <Typography variant="subtitle2" sx={{ mt: 1 }}>API Configuration</Typography>
                     <TextField 
                         label="Endpoint URL" 
+                        helperText="Supports dynamic parameters (e.g. /users/{user_id})"
                         fullWidth 
                         value={formData.configuration.url}
                         onChange={(e) => setFormData({...formData, configuration: {...formData.configuration, url: e.target.value}})}
@@ -355,9 +356,9 @@ const ToolLibrary: React.FC = () => {
                             <TableHead sx={{ bgcolor: 'grey.100' }}>
                                 <TableRow>
                                     <TableCell width="20%">Time</TableCell>
-                                    <TableCell width="15%">Agent ID</TableCell>
                                     <TableCell width="30%">Input</TableCell>
-                                    <TableCell width="35%">Output</TableCell>
+                                    <TableCell width="30%">URL</TableCell>
+                                    <TableCell width="20%">Output</TableCell>
                                 </TableRow>
                             </TableHead>
                             <TableBody>
@@ -365,14 +366,23 @@ const ToolLibrary: React.FC = () => {
                                     <TableRow key={index} hover sx={{ verticalAlign: 'top' }}>
                                         <TableCell sx={{ whiteSpace: 'nowrap' }}>
                                             {format(new Date(log.created_at), 'MMM dd, HH:mm:ss')}
-                                        </TableCell>
-                                        <TableCell>
-                                            {log.agent_id.substring(0, 8)}...
+                                            <Typography variant="caption" display="block" color="text.secondary">
+                                                Agent: {log.agent_id.substring(0, 8)}...
+                                            </Typography>
                                         </TableCell>
                                         <TableCell>
                                             <Box component="pre" sx={{ m: 0, fontSize: '0.75rem', fontFamily: 'monospace', maxWidth: '100%', overflow: 'auto' }}>
                                                 {JSON.stringify(log.input_args, null, 2)}
                                             </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            {log.request_url ? (
+                                                <Typography variant="caption" sx={{ fontFamily: 'monospace', wordBreak: 'break-all' }}>
+                                                    {log.request_url}
+                                                </Typography>
+                                            ) : (
+                                                <Typography variant="caption" color="text.secondary">-</Typography>
+                                            )}
                                         </TableCell>
                                         <TableCell>
                                             <Accordion elevation={0} sx={{ 
@@ -389,7 +399,7 @@ const ToolLibrary: React.FC = () => {
                                                     }}
                                                 >
                                                     <Typography variant="caption" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                                                        View Output (JSON)
+                                                        View Output
                                                     </Typography>
                                                 </AccordionSummary>
                                                 <AccordionDetails sx={{ p: 0, pt: 1 }}>

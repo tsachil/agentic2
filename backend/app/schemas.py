@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, ConfigDict
+from pydantic import BaseModel, EmailStr, ConfigDict, Field
 from typing import Optional, List, Any, Dict
 from datetime import datetime
 from .models import UserRole, AgentStatus
@@ -32,7 +32,7 @@ class AgentBase(BaseModel):
     name: str
     description: Optional[str] = None
     purpose: Optional[str] = None
-    personality_config: Optional[dict] = {}
+    personality_config: Optional[dict] = Field(default_factory=dict)
     
 class AgentCreate(AgentBase):
     pass
@@ -43,7 +43,7 @@ class AgentResponse(AgentBase):
     status: AgentStatus
     created_at: datetime
     updated_at: Optional[datetime]
-    tools: List['ToolResponse'] = []
+    tools: List['ToolResponse'] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -52,8 +52,8 @@ class ToolBase(BaseModel):
     name: str
     description: str
     type: str
-    parameter_schema: Dict[str, Any] = {}
-    configuration: Dict[str, Any] = {}
+    parameter_schema: Dict[str, Any] = Field(default_factory=dict)
+    configuration: Dict[str, Any] = Field(default_factory=dict)
     is_active: bool = True
 
 class ToolCreate(ToolBase):
@@ -67,11 +67,11 @@ class ToolResponse(ToolBase):
 
 class PromptRequest(BaseModel):
     prompt: str
-    history: Optional[List[Dict[str, str]]] = []
+    history: Optional[List[Dict[str, str]]] = Field(default_factory=list)
 
 class ChatResponse(BaseModel):
     response: str
-    tool_calls: Optional[List[Dict[str, Any]]] = []
+    tool_calls: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
 class ChatSessionBase(BaseModel):
     name: str
@@ -96,7 +96,7 @@ class ChatMessageCreate(ChatMessageBase):
 class ChatMessageResponse(ChatMessageBase):
     id: int
     created_at: datetime
-    tool_calls: Optional[List[Dict[str, Any]]] = []
+    tool_calls: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -112,7 +112,7 @@ class SimulationMessageCreate(SimulationMessageBase):
 class SimulationMessageResponse(SimulationMessageBase):
     id: int
     created_at: datetime
-    tool_calls: Optional[List[Dict[str, Any]]] = []
+    tool_calls: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -127,7 +127,7 @@ class SimulationResponse(SimulationBase):
     id: str
     status: str
     created_at: datetime
-    messages: List[SimulationMessageResponse] = []
+    messages: List[SimulationMessageResponse] = Field(default_factory=list)
     
     model_config = ConfigDict(from_attributes=True)
 
@@ -147,7 +147,7 @@ class AgentExecutionLogCreate(AgentExecutionLogBase):
 class AgentExecutionLogResponse(AgentExecutionLogBase):
     id: str
     created_at: datetime
-    tool_events: Optional[List[Dict[str, Any]]] = []
+    tool_events: Optional[List[Dict[str, Any]]] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -156,5 +156,6 @@ class ToolExecutionLog(BaseModel):
     agent_id: str
     input_args: Dict[str, Any]
     output_result: str
+    request_url: Optional[str] = None
     created_at: datetime
     execution_time_ms: int = 0

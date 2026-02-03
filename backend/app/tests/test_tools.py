@@ -1,5 +1,6 @@
 import pytest
 from unittest.mock import patch, AsyncMock
+from app import models
 
 @pytest.fixture
 def auth_header(client):
@@ -106,7 +107,7 @@ def test_agent_tool_assignment(client, auth_header):
 
 @patch("app.tools_registry.tool_service.execute_tool", new_callable=AsyncMock)
 def test_test_tool_endpoint(mock_execute, client, auth_header):
-    mock_execute.return_value = '{"result": "mocked"}'
+    mock_execute.return_value = ('{"result": "mocked"}', {"url": "http://test.com"})
     
     # Get a tool id
     client.post("/tools/seed", headers=auth_header)
@@ -115,5 +116,49 @@ def test_test_tool_endpoint(mock_execute, client, auth_header):
 
     response = client.post(f"/tools/{tool_id}/test", json={"arg1": "value1"}, headers=auth_header)
     assert response.status_code == 200
-    assert response.json() == {"result": '{"result": "mocked"}'}
+    assert response.json() == {"result": '{"result": "mocked"}', "metadata": {"url": "http://test.com"}}
     mock_execute.assert_called_once()
+
+def test_tool_logs_include_prompt_context_events(client, auth_header, db):
+    # Create tool
+    tool_data = {
+        "name": "audit_tool",
+        "description": "Audit tool",
+        "type": "api",
+        "parameter_schema": {"type": "object", "properties": {}},
+        "configuration": {"url": "https://api.example.com", "method": "GET"}
+    }
+    tool = client.post("/tools/", json=tool_data, headers=auth_header).json()
+
+    # Create agent
+    agent = client.post("/agents/", json={"name": "Logger Agent", "purpose": "Testing"}, headers=auth_header).json()
+
+    # Insert log with tool_events inside prompt_context
+    log = models.AgentExecutionLog(
+        agent_id=agent["id"],
+        prompt_context={
+            "system_prompt": "test",
+            "history": [],
+            "user_prompt": "test",
+            "tool_events": [
+                {
+                    "tool": tool["name"],
+                    "input": {"q": "1"},
+                    "output": "ok",
+                    "metadata": {"url": "https://api.example.com"}
+                }
+            ]
+        },
+        raw_response="raw",
+        thought_process="",
+        execution_time_ms=12
+    )
+    db.add(log)
+    db.commit()
+
+    response = client.get(f"/tools/{tool['id']}/logs", headers=auth_header)
+    assert response.status_code == 200
+    logs = response.json()
+    assert len(logs) == 1
+    assert logs[0]["tool_name"] == tool["name"]
+    assert logs[0]["request_url"] == "https://api.example.com"

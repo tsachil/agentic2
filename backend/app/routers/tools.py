@@ -24,8 +24,8 @@ async def test_tool(
     if not tool:
         raise HTTPException(status_code=404, detail="Tool not found")
         
-    result = await tools_registry.tool_service.execute_tool(tool, arguments)
-    return {"result": result}
+    result, metadata = await tools_registry.tool_service.execute_tool(tool, arguments)
+    return {"result": result, "metadata": metadata}
 
 @router.post("/", response_model=schemas.ToolResponse)
 def create_tool(tool: schemas.ToolCreate, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
@@ -143,11 +143,13 @@ def get_tool_logs(tool_id: str, db: Session = Depends(database.get_db), current_
         for event in tool_events:
             # Check both original name (just in case) and safe name
             if event.get("tool") == tool.name or event.get("tool") == safe_name:
+                metadata = event.get("metadata", {})
                 tool_logs.append({
                     "tool_name": tool.name,
                     "agent_id": log.agent_id,
                     "input_args": event.get("input", {}),
                     "output_result": str(event.get("output", "")),
+                    "request_url": metadata.get("url") if metadata else None,
                     "created_at": log.created_at,
                     "execution_time_ms": log.execution_time_ms
                 })

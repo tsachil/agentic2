@@ -9,13 +9,110 @@ export const apiClient = axios.create({
   },
 });
 
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+import { v4 as uuidv4 } from 'uuid';
+
+const MAX_LOG_STRING = 500;
+const redactKeys = new Set(['password', 'token', 'authorization', 'api_key', 'apikey', 'secret', 'access_token', 'refresh_token']);
+
+const scrubValue = (value: any): any => {
+  if (Array.isArray(value)) {
+    return value.map(scrubValue);
   }
-  return config;
+  if (value && typeof value === 'object') {
+    const out: any = {};
+    Object.keys(value).forEach((k) => {
+      out[k] = redactKeys.has(k.toLowerCase()) ? '[REDACTED]' : scrubValue(value[k]);
+    });
+    return out;
+  }
+  if (typeof value === 'string') {
+    return value.length > MAX_LOG_STRING ? `${value.slice(0, MAX_LOG_STRING)}...` : value;
+  }
+  return value;
+};
+
+const summarizePayload = (data: any) => {
+  if (!data) return undefined;
+  if (typeof data === 'string') return `${data.length} chars`;
+  if (Array.isArray(data)) return `array(${data.length})`;
+  if (typeof data === 'object') return `keys(${Object.keys(data).length})`;
+  return typeof data;
+};
+
+// Simple Log Bridge
+const shipLog = (level: 'info' | 'error' | 'debug', message: string, context: any) => {
+    // Prevent infinite loop: Don't log the log shipping itself
+    if (context.url && context.url.includes('/logs/ingest')) return;
+
+    // Use sendBeacon or simple fetch without waiting for response to avoid blocking
+    // We construct the payload manually to avoid using the interceptor-laden client
+    const payload = {
+        level,
+        message,
+        timestamp: new Date().toISOString(),
+        context: scrubValue(context)
+    };
+
+    fetch(`${baseURL}/logs/ingest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    }).catch(err => console.error("Failed to ship log", err));
+};
+
+apiClient.interceptors.request.use((config) => {
+    // Generate Correlation ID if missing
+    if (!config.headers['X-Correlation-ID']) {
+        config.headers['X-Correlation-ID'] = uuidv4();
+    }
+
+    // Ship Log
+    shipLog('info', `API Request: ${config.method?.toUpperCase()} ${config.url}`, {
+        correlationId: config.headers['X-Correlation-ID'],
+        method: config.method,
+        url: config.url,
+        data: summarizePayload(config.data)
+    });
+    
+    // Console fallback
+    console.debug('API Request:', config.method?.toUpperCase(), config.url, config.data);
+    
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
+
+apiClient.interceptors.response.use(
+    (response) => {
+        shipLog('info', `API Response: ${response.status} ${response.config.url}`, {
+            correlationId: response.config.headers['X-Correlation-ID'],
+            status: response.status,
+            url: response.config.url,
+            data: summarizePayload(response.data)
+        });
+
+        console.debug('API Response:', response.status, response.config.url, response.data);
+        return response;
+    },
+    (error) => {
+        const correlationId = error.config?.headers['X-Correlation-ID'];
+        
+        if (error.response) {
+            shipLog('error', `API Error Response: ${error.response.status}`, {
+                correlationId,
+                status: error.response.status,
+                data: summarizePayload(error.response.data)
+            });
+            console.error('API Error Response:', error.response.status, error.response.data);
+        } else {
+            shipLog('error', `API Error: ${error.message}`, { correlationId });
+            console.error('API Error:', error.message);
+        }
+        return Promise.reject(error);
+    }
+);
 
 export const checkHealth = async () => {
   const response = await apiClient.get('/');
@@ -101,6 +198,7 @@ export interface ToolExecutionLog {
   agent_id: string;
   input_args: any;
   output_result: string;
+  request_url?: string;
   created_at: string;
   execution_time_ms: number;
 }

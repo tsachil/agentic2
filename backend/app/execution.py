@@ -36,11 +36,8 @@ class ExecutionService:
         if personality.get("assertiveness", 0.5) > 0.7:
             prompt += "Be assertive and direct in your communication.\n"
             
-        # Add Chain of Thought Instruction
-        prompt += "\nIMPORTANT: Before answering, you MUST think step-by-step to determine the best response. "
-        prompt += "Enclose your internal reasoning inside <thought> tags. "
-        prompt += "Then, provide your final response to the user outside the tags.\n"
-        prompt += "Example: <thought>User asked X, I should consider Y...</thought>Here is the answer..."
+        # Avoid requesting chain-of-thought. Keep responses concise and user-facing.
+        prompt += "\nProvide a clear, user-facing response without revealing internal reasoning."
             
         return prompt
 
@@ -71,25 +68,42 @@ class ExecutionService:
                 safe_name = re.sub(r'[^a-zA-Z0-9_]', '_', tool.name)
                 tools_map[safe_name] = tool # Map safe name back to tool model
                 
+                # Sanitize schema for Gemini SDK
+                # Remove keys that might cause Pydantic validation errors in types.Schema or FunctionDeclaration
+                sanitized_schema = tool.parameter_schema.copy() if tool.parameter_schema else {}
+                for forbidden in ["id", "$schema", "title", "$id"]:
+                    if forbidden in sanitized_schema:
+                        del sanitized_schema[forbidden]
+                
+                # Ensure root type is object
+                if "type" not in sanitized_schema:
+                    sanitized_schema["type"] = "object"
+                elif sanitized_schema["type"] != "object":
+                    # If it's something else (unlikely for tool args), force it or wrap it?
+                    # For now, let's assume if it's not object, it's malformed for a function declaration root.
+                    sanitized_schema["type"] = "object"
+
                 functions.append(types.FunctionDeclaration(
                     name=safe_name,
                     description=tool.description,
-                    parameters=tool.parameter_schema
+                    parameters=sanitized_schema
                 ))
             
             if functions:
                 gemini_tools.append(types.Tool(function_declarations=functions))
 
+        tool_events: List[Dict[str, Any]] = []
         log_payload = {
             "prompt_context": {
                 "system_prompt": system_prompt,
                 "history": history,
                 "user_prompt": user_prompt,
-                "available_tools": [t.name for t in (getattr(agent_model, 'tools', []) or []) if t.is_active]
+                "available_tools": [t.name for t in (getattr(agent_model, 'tools', []) or []) if t.is_active],
+                "tool_events": tool_events,
             },
             "raw_response": "",
             "thought_process": "",
-            "tool_events": [],
+            "tool_events": tool_events,
             "execution_time_ms": 0
         }
 
@@ -125,24 +139,10 @@ class ExecutionService:
                 # Analyze parts for text (thoughts) and function calls
                 content_parts = response.candidates[0].content.parts
                 function_calls = []
-                current_turn_thoughts = []
 
                 for part in content_parts:
-                    if part.text:
-                        current_turn_thoughts.append(part.text)
                     if part.function_call:
                         function_calls.append(part.function_call)
-                
-                # Append any thoughts found during this turn to the main thought process
-                if current_turn_thoughts:
-                    turn_text = "\n".join(current_turn_thoughts)
-                    # Extract thought tags if present, otherwise just use the text
-                    thought_match = re.search(r'<thought>(.*?)</thought>', turn_text, re.DOTALL)
-                    if thought_match:
-                        log_payload["thought_process"] += f"\n[Turn Thought]: {thought_match.group(1).strip()}"
-                    else:
-                        # If just plain text before a tool call, treat it as thought
-                        log_payload["thought_process"] += f"\n[Turn Text]: {turn_text.strip()}"
 
                 if not function_calls:
                     break
@@ -157,8 +157,9 @@ class ExecutionService:
                     
                     tool_model = tools_map.get(tool_name)
                     if tool_model:
-                        result = await tool_service.execute_tool(tool_model, args)
+                        result, metadata = await tool_service.execute_tool(tool_model, args)
                         log_event["output"] = result
+                        log_event["metadata"] = metadata
                         
                         # Format response for Gemini
                         tool_responses.append(types.Part(
@@ -180,24 +181,18 @@ class ExecutionService:
                 # Send tool results back to the model
                 response = await chat.send_message(tool_responses)
 
-            # Final response processing
-            raw_text = response.text
+            # Final response processing - extract text from parts
+            content_parts = response.candidates[0].content.parts
+            raw_text = "\n".join([part.text for part in content_parts if part.text])
             
-            # Parsing thought process
-            thought_match = re.search(r'<thought>(.*?)</thought>', raw_text, re.DOTALL)
-            thought_process = thought_match.group(1).strip() if thought_match else ""
-            
-            # If thought process was accumulated across turns (not standard for Gemini, but good to handle)
-            # or if it was only in the final turn.
-            
-            # Remove thought tag from final response
+            # Remove any internal thought tags from final response if present
             final_response = re.sub(r'<thought>.*?</thought>', '', raw_text, flags=re.DOTALL).strip()
             
             end_time = time.time()
             execution_time = int((end_time - start_time) * 1000)
             
             log_payload["raw_response"] = raw_text
-            log_payload["thought_process"] = thought_process
+            log_payload["thought_process"] = ""
             log_payload["execution_time_ms"] = execution_time
             
             return {

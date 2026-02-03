@@ -11,13 +11,14 @@ class ToolService:
             "calculator": self._calculator
         }
 
-    async def execute_tool(self, tool_model: Any, arguments: Dict[str, Any]) -> str:
+    async def execute_tool(self, tool_model: Any, arguments: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
         if tool_model.type == "builtin":
-            return await self._execute_builtin(tool_model.name, arguments)
+            result = await self._execute_builtin(tool_model.name, arguments)
+            return result, {}
         elif tool_model.type == "api":
             return await self._execute_api(tool_model.configuration, arguments)
         else:
-            return f"Error: Unknown tool type {tool_model.type}"
+            return f"Error: Unknown tool type {tool_model.type}", {}
 
     async def _execute_builtin(self, name: str, arguments: Dict[str, Any]) -> str:
         func = self.builtin_tools.get(name)
@@ -28,22 +29,37 @@ class ToolService:
         except Exception as e:
             return f"Error executing builtin tool {name}: {str(e)}"
 
-    async def _execute_api(self, config: Dict[str, Any], arguments: Dict[str, Any]) -> str:
+    async def _execute_api(self, config: Dict[str, Any], arguments: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
         url = config.get("url")
         method = config.get("method", "GET").upper()
         headers = config.get("headers", {})
 
+        # Handle Dynamic URL Parameters (e.g. https://api.com/users/{id})
+        # We replace placeholders in the URL with values from arguments
+        # and remove those values from the arguments sent in the body/query.
+        request_args = arguments.copy()
+        
+        # Check for any argument keys used as placeholders in the URL
+        for key, value in arguments.items():
+            placeholder = "{" + key + "}"
+            if placeholder in url:
+                url = url.replace(placeholder, str(value))
+                if key in request_args:
+                    del request_args[key]
+        
+        metadata = {"url": url, "method": method}
+
         async with httpx.AsyncClient() as client:
             try:
                 if method == "GET":
-                    response = await client.get(url, params=arguments, headers=headers, timeout=10.0)
+                    response = await client.get(url, params=request_args, headers=headers, timeout=10.0)
                 else:
-                    response = await client.post(url, json=arguments, headers=headers, timeout=10.0)
+                    response = await client.post(url, json=request_args, headers=headers, timeout=10.0)
                 
                 response.raise_for_status()
-                return json.dumps(response.json())
+                return json.dumps(response.json()), metadata
             except Exception as e:
-                return f"Error calling API tool: {str(e)}"
+                return f"Error calling API tool: {str(e)}", metadata
 
     # --- Builtin Tool Implementations ---
     
