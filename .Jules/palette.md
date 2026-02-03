@@ -9,3 +9,7 @@
 ## 2025-02-17 - Disabled Spinner Contrast
 **Learning:** Using `color="inherit"` on a spinner inside a disabled button results in low contrast (grey on grey/light grey), making it hard to see.
 **Action:** Use a specific color for the spinner or use a dedicated loading button component that handles contrast correctly in disabled states.
+
+## 2025-05-22 - Action Button Context
+**Learning:** In lists of items (like agent cards), buttons with generic labels like "Manage" or "Chat" are confusing for screen reader users as they hear them repeated without context.
+**Action:** Always append the item name to the aria-label, e.g., `aria-label={\`Manage \${agent.name}\`}`.
