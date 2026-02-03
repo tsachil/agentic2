@@ -45,7 +45,7 @@ class Agent(Base):
     __tablename__ = "agents"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(Integer, ForeignKey("users.id"), index=True)
     name = Column(String, nullable=False)
     description = Column(Text)
     purpose = Column(Text)
@@ -112,8 +112,8 @@ class ChatSession(Base):
     __tablename__ = "chat_sessions"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    agent_id = Column(String, ForeignKey("agents.id"))
-    user_id = Column(Integer, ForeignKey("users.id"))
+    agent_id = Column(String, ForeignKey("agents.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
     name = Column(String) # E.g., "Chat started at..." or summary
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -124,7 +124,7 @@ class ChatMessage(Base):
     __tablename__ = "chat_messages"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String, ForeignKey("chat_sessions.id"))
+    session_id = Column(String, ForeignKey("chat_sessions.id"), index=True)
     role = Column(String) # 'user' or 'assistant'
     content = Column(Text)
     tool_calls = Column(JSON, nullable=True)
