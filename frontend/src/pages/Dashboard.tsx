@@ -95,10 +95,19 @@ export default function Dashboard() {
                   />
                 </CardContent>
                 <CardActions>
-                  <Button size="small" onClick={() => navigate(`/agent/${agent.id}/manage`)}>
+                  <Button
+                    size="small"
+                    onClick={() => navigate(`/agent/${agent.id}/manage`)}
+                    aria-label={`Manage ${agent.name}`}
+                  >
                     Manage
                   </Button>
-                  <Button size="small" color="secondary" onClick={() => navigate(`/agent/${agent.id}/chat`)}>
+                  <Button
+                    size="small"
+                    color="secondary"
+                    onClick={() => navigate(`/agent/${agent.id}/chat`)}
+                    aria-label={`Chat with ${agent.name}`}
+                  >
                     Chat
                   </Button>
                 </CardActions>
@@ -110,7 +119,7 @@ export default function Dashboard() {
 
       <Fab 
         color="primary" 
-        aria-label="add" 
+        aria-label="Create new agent"
         sx={{ position: 'fixed', bottom: 32, right: 32 }}
         onClick={() => navigate('/create-agent')}
       >
