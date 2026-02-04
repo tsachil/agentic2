@@ -19,6 +19,8 @@ if SECRET_KEY == "CHANGE_THIS_TO_A_SECURE_SECRET_KEY":
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+# Hash for "password" used for timing attack mitigation
+DUMMY_PASSWORD_HASH = "$2b$12$ByYq0SmHgBj6sr5i3.JH3eRLAjW4NUGQhnsq0hMMkCvGjYPJcRSwK"
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/token")
 
