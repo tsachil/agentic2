@@ -86,7 +86,7 @@ class Simulation(Base):
     __tablename__ = "simulations"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    owner_id = Column(Integer, ForeignKey("users.id"))
+    owner_id = Column(Integer, ForeignKey("users.id"), index=True)
     name = Column(String)
     status = Column(String, default="active") # active, paused, completed
     agent_ids = Column(JSON) # List of agent IDs participating
@@ -137,8 +137,8 @@ class AgentExecutionLog(Base):
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     agent_id = Column(String, ForeignKey("agents.id"), index=True)
-    session_id = Column(String, ForeignKey("chat_sessions.id"), nullable=True)
-    simulation_id = Column(String, ForeignKey("simulations.id"), nullable=True)
+    session_id = Column(String, ForeignKey("chat_sessions.id"), nullable=True, index=True)
+    simulation_id = Column(String, ForeignKey("simulations.id"), nullable=True, index=True)
     
     prompt_context = Column(JSON)  # Stores system prompt, history, user input
     raw_response = Column(Text)    # Full raw response from LLM
