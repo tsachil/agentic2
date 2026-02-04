@@ -13,3 +13,7 @@
 ## 2025-05-22 - Action Button Context
 **Learning:** In lists of items (like agent cards), buttons with generic labels like "Manage" or "Chat" are confusing for screen reader users as they hear them repeated without context.
 **Action:** Always append the item name to the aria-label, e.g., `aria-label={\`Manage \${agent.name}\`}`.
+
+## 2026-02-04 - Chat Input Usability
+**Learning:** Single-line inputs for chat interfaces frustrate users who want to compose structured messages. Users expect `Shift+Enter` to create a new line and `Enter` to send.
+**Action:** Use a multiline `TextField` with `maxRows` and a custom `onKeyDown` handler to support `Shift+Enter` for newlines and `Enter` for sending.

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { 
   Box, 
   Typography, 
@@ -98,6 +98,13 @@ export default function AgentChat() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
 
   const handleSend = async () => {
     if (!input.trim() || !currentSessionId) return;
@@ -242,14 +249,21 @@ export default function AgentChat() {
         <Paper elevation={3} sx={{ p: 2, display: 'flex', gap: 1 }}>
           <TextField
             fullWidth
+            multiline
+            maxRows={4}
             placeholder="Type a message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={handleKeyDown}
             disabled={loading || !currentSessionId}
             size="small"
           />
-          <IconButton color="primary" onClick={handleSend} disabled={loading || !input.trim() || !currentSessionId}>
+          <IconButton
+            color="primary"
+            onClick={handleSend}
+            disabled={loading || !input.trim() || !currentSessionId}
+            aria-label="Send message"
+          >
             <SendIcon />
           </IconButton>
         </Paper>
