@@ -29,7 +29,15 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
 @router.post("/token", response_model=schemas.Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
     user = db.query(models.User).filter(models.User.email == form_data.username).first()
-    if not user or not auth.verify_password(form_data.password, user.password_hash):
+
+    if user:
+        is_valid_password = auth.verify_password(form_data.password, user.password_hash)
+    else:
+        # Prevent timing attacks by simulating password verification work
+        auth.verify_password(form_data.password, auth.DUMMY_PASSWORD_HASH)
+        is_valid_password = False
+
+    if not user or not is_valid_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect username or password",
