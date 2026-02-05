@@ -13,3 +13,7 @@
 ## 2025-05-22 - Action Button Context
 **Learning:** In lists of items (like agent cards), buttons with generic labels like "Manage" or "Chat" are confusing for screen reader users as they hear them repeated without context.
 **Action:** Always append the item name to the aria-label, e.g., `aria-label={\`Manage \${agent.name}\`}`.
+
+## 2026-02-05 - MUI v7 TextField Accessibility
+**Learning:** In MUI v7, `aria-label` on `TextField` should be passed via `slotProps={{ htmlInput: { 'aria-label': '...' } }}` to ensure it applies to the underlying input element.
+**Action:** Use `slotProps.htmlInput` for accessibility attributes on TextFields.

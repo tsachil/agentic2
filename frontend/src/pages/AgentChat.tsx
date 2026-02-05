@@ -167,7 +167,7 @@ export default function AgentChat() {
       <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
         {/* Header */}
         <Box sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
-             <Breadcrumbs sx={{ mb: 1 }}>
+             <Breadcrumbs sx={{ mb: 1 }} aria-label="Breadcrumb">
                 <MuiLink component={Link} to="/" underline="hover" color="inherit">Dashboard</MuiLink>
                 <Typography color="text.primary">{agent.name}</Typography>
             </Breadcrumbs>
@@ -183,7 +183,7 @@ export default function AgentChat() {
                   <Typography>Select a chat or start a new one</Typography>
               </Box>
           ) : (
-            <List>
+            <List role="log" aria-live="polite">
                 {messages.length === 0 && (
                     <Typography sx={{ textAlign: 'center', mt: 4, color: 'text.secondary' }}>
                         Start chatting with {agent.name}...
@@ -248,8 +248,14 @@ export default function AgentChat() {
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             disabled={loading || !currentSessionId}
             size="small"
+            slotProps={{ htmlInput: { 'aria-label': 'Chat message' } }}
           />
-          <IconButton color="primary" onClick={handleSend} disabled={loading || !input.trim() || !currentSessionId}>
+          <IconButton
+            color="primary"
+            onClick={handleSend}
+            disabled={loading || !input.trim() || !currentSessionId}
+            aria-label="Send message"
+          >
             <SendIcon />
           </IconButton>
         </Paper>
