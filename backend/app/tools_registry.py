@@ -1,6 +1,8 @@
 import httpx
 import json
 import asyncio
+import ast
+import operator
 from typing import Dict, Any, Callable
 from datetime import datetime
 
@@ -67,13 +69,53 @@ class ToolService:
         return datetime.now().strftime(format)
 
     def _calculator(self, expression: str) -> str:
-        # Note: In production, use a safer math evaluator
+        # Secure AST-based evaluator replacing dangerous eval()
         try:
-            # Basic validation
-            if not all(c in "0123456789+-*/(). " for c in expression):
-                return "Error: Invalid characters in expression"
-            return str(eval(expression, {"__builtins__": {}}, {}))
+            return self._safe_eval(expression)
         except Exception as e:
             return f"Error calculating: {str(e)}"
 
+    def _safe_eval(self, expr: str) -> str:
+        # Supported operators
+        ops = {
+            ast.Add: operator.add,
+            ast.Sub: operator.sub,
+            ast.Mult: operator.mul,
+            ast.Div: operator.truediv,
+            ast.USub: operator.neg,
+            ast.UAdd: operator.pos,
+        }
+
+        def _eval_node(node):
+            if isinstance(node, ast.Constant):
+                if isinstance(node.value, (int, float)):
+                    return node.value
+                raise ValueError(f"Invalid constant: {node.value}")
+            elif isinstance(node, ast.BinOp):
+                if type(node.op) in ops:
+                    return ops[type(node.op)](_eval_node(node.left), _eval_node(node.right))
+                raise ValueError(f"Unsupported operator: {type(node.op)}")
+            elif isinstance(node, ast.UnaryOp):
+                if type(node.op) in ops:
+                    return ops[type(node.op)](_eval_node(node.operand))
+                raise ValueError(f"Unsupported unary operator: {type(node.op)}")
+            else:
+                # Reject everything else (Calls, attributes, names, etc.)
+                raise ValueError(f"Invalid expression node: {type(node).__name__}")
+
+        try:
+            # mode='eval' ensures it's an expression, not a statement
+            # This implicitly rejects statements like 'import os'
+            tree = ast.parse(expr, mode='eval')
+            result = _eval_node(tree.body)
+            return str(result)
+        except SyntaxError:
+             # Match the previous error message for consistency/tests if desired,
+             # or just return a generic error.
+             return "Error: Invalid characters or syntax"
+        except ValueError as e:
+             # Wrapper will prepend "Error calculating:"
+             raise e
+        except Exception as e:
+             raise e
 tool_service = ToolService()
