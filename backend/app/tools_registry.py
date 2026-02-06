@@ -69,6 +69,12 @@ class ToolService:
     def _calculator(self, expression: str) -> str:
         # Note: In production, use a safer math evaluator
         try:
+            # Security: Prevent DoS
+            if len(expression) > 300:
+                return "Error: Expression too long"
+            if "**" in expression:
+                return "Error: Exponentiation is not allowed"
+
             # Basic validation
             if not all(c in "0123456789+-*/(). " for c in expression):
                 return "Error: Invalid characters in expression"
