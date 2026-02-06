@@ -278,7 +278,7 @@ export default function AgentBuilder() {
               variant="contained"
               size="large"
               disabled={submitting}
-              startIcon={submitting ? <CircularProgress size={20} color="inherit" /> : null}
+              startIcon={submitting ? <CircularProgress size={20} /> : null}
             >
               {submitting ? (isEditing ? 'Saving...' : 'Creating...') : (isEditing ? 'Save Changes' : 'Create Agent')}
             </Button>
