@@ -90,7 +90,7 @@ export default function Register() {
             sx={{ mt: 3, mb: 2 }}
             disabled={isLoading}
           >
-            {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Register'}
+            {isLoading ? <CircularProgress size={24} /> : 'Register'}
           </Button>
           <Box sx={{ textAlign: 'center' }}>
             <Link to="/login" style={{ textDecoration: 'none' }}>
