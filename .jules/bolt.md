@@ -5,3 +5,7 @@
 ## 2026-02-03 - Missing Indexes on Foreign Keys
 **Learning:** Foreign keys in SQLAlchemy models do not automatically create indexes in many databases (like Postgres). Missing indexes on `ChatMessage.session_id` caused O(N) full table scans when fetching chat history, which is a critical path operation.
 **Action:** Always explicitly set `index=True` on foreign key columns in SQLAlchemy models that are frequently used for filtering or joining (e.g., `session_id`, `user_id`, `agent_id`).
+
+## 2026-02-07 - N+1 Query in Agent List
+**Learning:** The `read_agents` endpoint had an N+1 query issue because `AgentResponse` includes `tools`, but the SQLAlchemy query for `Agent` was not eagerly loading them. Pydantic serialization triggered lazy loading for each agent's tools.
+**Action:** Used `subqueryload(models.Agent.tools)` in the SQLAlchemy query. Added `backend/app/tests/test_query_optimization.py` to count queries and prevent regression.

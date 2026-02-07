@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, subqueryload
 from sqlalchemy import func
 from typing import List
 from datetime import datetime
@@ -23,12 +23,14 @@ def create_agent(agent: schemas.AgentCreate, db: Session = Depends(database.get_
 
 @router.get("/", response_model=List[schemas.AgentResponse])
 def read_agents(skip: int = 0, limit: int = 100, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
-    agents = db.query(models.Agent).filter(models.Agent.owner_id == current_user.id).offset(skip).limit(limit).all()
+    # Eagerly load tools to avoid N+1 problem
+    agents = db.query(models.Agent).options(subqueryload(models.Agent.tools)).filter(models.Agent.owner_id == current_user.id).offset(skip).limit(limit).all()
     return agents
 
 @router.get("/{agent_id}", response_model=schemas.AgentResponse)
 def read_agent(agent_id: str, db: Session = Depends(database.get_db), current_user: models.User = Depends(auth.get_current_user)):
-    agent = db.query(models.Agent).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
+    # Eagerly load tools
+    agent = db.query(models.Agent).options(subqueryload(models.Agent.tools)).filter(models.Agent.id == agent_id, models.Agent.owner_id == current_user.id).first()
     if agent is None:
         raise HTTPException(status_code=404, detail="Agent not found")
     return agent
