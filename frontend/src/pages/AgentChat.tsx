@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import type { KeyboardEvent } from 'react';
 import { 
   Box, 
   Typography, 
@@ -99,6 +100,13 @@ export default function AgentChat() {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  };
+
   const handleSend = async () => {
     if (!input.trim() || !currentSessionId) return;
 
@@ -183,7 +191,7 @@ export default function AgentChat() {
                   <Typography>Select a chat or start a new one</Typography>
               </Box>
           ) : (
-            <List>
+            <List role="log" aria-live="polite" aria-label="Chat history">
                 {messages.length === 0 && (
                     <Typography sx={{ textAlign: 'center', mt: 4, color: 'text.secondary' }}>
                         Start chatting with {agent.name}...
@@ -242,15 +250,23 @@ export default function AgentChat() {
         <Paper elevation={3} sx={{ p: 2, display: 'flex', gap: 1 }}>
           <TextField
             fullWidth
+            multiline
+            maxRows={4}
             placeholder="Type a message..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSend()}
+            onKeyDown={handleKeyDown}
             disabled={loading || !currentSessionId}
             size="small"
+            slotProps={{ htmlInput: { 'aria-label': 'Type a message' } }}
           />
-          <IconButton color="primary" onClick={handleSend} disabled={loading || !input.trim() || !currentSessionId}>
-            <SendIcon />
+          <IconButton
+            color="primary"
+            onClick={handleSend}
+            disabled={loading || !input.trim() || !currentSessionId}
+            aria-label="Send message"
+          >
+            {loading ? <CircularProgress size={24} sx={{ color: 'primary.main' }} /> : <SendIcon />}
           </IconButton>
         </Paper>
       </Box>
