@@ -1,6 +1,9 @@
 import httpx
 import json
 import asyncio
+import socket
+import ipaddress
+from urllib.parse import urlparse
 from typing import Dict, Any, Callable
 from datetime import datetime
 
@@ -29,6 +32,38 @@ class ToolService:
         except Exception as e:
             return f"Error executing builtin tool {name}: {str(e)}"
 
+    def _validate_url(self, url: str) -> None:
+        try:
+            parsed = urlparse(url)
+            if parsed.scheme not in ("http", "https"):
+                 raise ValueError("Invalid scheme (only http/https allowed)")
+
+            hostname = parsed.hostname
+            if not hostname:
+                 raise ValueError("Invalid hostname")
+
+            # Block common local hostnames
+            if hostname in ("localhost", "0.0.0.0", "::1"):
+                 raise ValueError("Access to local resources is denied")
+
+            # Resolve to IP to check for private ranges
+            try:
+                # Use getaddrinfo to resolve hostname to IP address(es)
+                addr_info = socket.getaddrinfo(hostname, None)
+                for item in addr_info:
+                    # item[4] is the sockaddr, item[4][0] is the IP address
+                    ip_addr = item[4][0]
+                    ip = ipaddress.ip_address(ip_addr)
+                    if ip.is_private or ip.is_loopback:
+                         raise ValueError(f"Access to private IP {ip_addr} is denied")
+            except socket.gaierror:
+                 raise ValueError("Could not resolve hostname")
+
+        except ValueError as e:
+            raise e
+        except Exception as e:
+            raise ValueError(f"URL validation failed: {str(e)}")
+
     async def _execute_api(self, config: Dict[str, Any], arguments: Dict[str, Any]) -> tuple[str, Dict[str, Any]]:
         url = config.get("url")
         method = config.get("method", "GET").upper()
@@ -48,6 +83,11 @@ class ToolService:
                     del request_args[key]
         
         metadata = {"url": url, "method": method}
+
+        try:
+            self._validate_url(url)
+        except ValueError as e:
+            return f"Error calling API tool: {str(e)}", metadata
 
         async with httpx.AsyncClient() as client:
             try:
