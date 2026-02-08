@@ -1,4 +1,5 @@
 import pytest
+import socket
 from unittest.mock import AsyncMock, MagicMock, patch
 from app.tools_registry import tool_service
 
@@ -26,7 +27,8 @@ async def test_execute_api_dynamic_params():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("httpx.AsyncClient", return_value=mock_client), \
+         patch("socket.getaddrinfo", return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('93.184.216.34', 80))]):
         result, metadata = await tool_service._execute_api(config, arguments)
     
     # Assertions
@@ -63,7 +65,8 @@ async def test_execute_api_dynamic_params_post():
     mock_client.__aenter__.return_value = mock_client
     mock_client.__aexit__.return_value = None
 
-    with patch("httpx.AsyncClient", return_value=mock_client):
+    with patch("httpx.AsyncClient", return_value=mock_client), \
+         patch("socket.getaddrinfo", return_value=[(socket.AF_INET, socket.SOCK_STREAM, 6, '', ('93.184.216.34', 80))]):
         result, metadata = await tool_service._execute_api(config, arguments)
     
     expected_url = "https://api.example.com/items/99"
